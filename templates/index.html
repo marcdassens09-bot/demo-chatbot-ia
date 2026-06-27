@@ -75,7 +75,6 @@
             </button>
         </div>
     </div>
-
     <script>
         let nomEntreprise = "";
         let historique = [];
@@ -88,7 +87,7 @@
             nomEntreprise = entreprise;
             document.getElementById("modal").style.display = "none";
             document.getElementById("titre-assistant").textContent = `Assistant ${entreprise}`;
-            ajouterMessage(`Bonjour ${contact} ! Je suis l'assistant virtuel de <strong>${entreprise}</strong>. Comment puis-je vous aider aujourd'hui ? 😊`, "ia");
+            ajouterMessage(`👋 ${entreprise} — Comment puis-je vous aider ? / How can I help you?`, "ia");
         }
 
         document.getElementById("envoyer").addEventListener("click", envoyer);
