@@ -24,14 +24,23 @@ def chat():
         "content": message
     })
 
+    # Premier appel avec recherche web
     reponse = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
-        system=f"Tu es l'assistant virtuel de {entreprise}. Tu accueilles chaleureusement les clients et réponds à leurs questions sur les services, les tarifs et les horaires. Tu es professionnel, courtois et concis.",
+        system=f"Tu es l'assistant virtuel de {entreprise}. Tu réponds aux questions des clients. Si on te demande des actualités ou informations récentes sur un secteur, utilise la recherche web. Tu es professionnel et concis.",
+        tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=historique
     )
 
-    texte = reponse.content[0].text
+    # Extraire uniquement le texte
+    texte = ""
+    for block in reponse.content:
+        if block.type == "text":
+            texte += block.text
+
+    if not texte:
+        texte = "Je recherche des informations pour vous..."
 
     historique.append({
         "role": "assistant",
