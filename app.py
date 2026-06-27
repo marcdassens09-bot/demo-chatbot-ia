@@ -28,8 +28,7 @@ def chat():
     reponse = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
-        system=f"Tu es l'assistant virtuel de {entreprise}. Tu réponds aux questions des clients. Si on te demande des actualités ou informations récentes sur un secteur, utilise la recherche web. Tu es professionnel et concis.",
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
+       system=f"Tu es l'assistant virtuel de {entreprise}. Tu réponds aux questions des clients de façon naturelle. Ne dis 'Bonjour' qu'une seule fois au début de la conversation, pas à chaque réponse. Si on te demande des actualités ou informations récentes sur un secteur, utilise la recherche web. Tu es professionnel et concis.",
         messages=historique
     )
 
