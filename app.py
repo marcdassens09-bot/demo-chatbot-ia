@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-from anthropic import Anthropic
+from anthropic import Anthropi
 from dotenv import load_dotenv
 import os
 
@@ -29,7 +29,7 @@ def chat():
         max_tokens=1000,
         system=f"""Tu es l'assistant virtuel de {entreprise}, situé en Ariège (09), Occitanie, France.
 Détecte la langue de chaque message et réponds TOUJOURS dans cette langue.
-Ne répète pas les mêmes formules. Va droit au but. Sois concis et utile.
+Réponds de façon décontractée et chaleureuse, comme un ami local qui connaît bien la région. Pas trop formel. Va droit au but. Sois sympa et utile.
 
 URGENCES :
 - SAMU : 15 | Pompiers : 18 | Police : 17 | Urgences européen : 112
