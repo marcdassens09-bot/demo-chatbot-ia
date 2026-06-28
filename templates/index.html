@@ -178,8 +178,16 @@
                 btnMicro.classList.remove("actif");
                 envoyer();
             };
-            reconnaissance.onerror = function() {
+            reconnaissance.onerror = function(e) {
                 btnMicro.classList.remove("actif");
+                const msgs = {
+                    'not-allowed': "⛔ Micro bloqué — clique sur le cadenas 🔒 dans la barre d'adresse et autorise le micro.",
+                    'no-speech': "🔇 Aucune voix détectée, réessaie.",
+                    'audio-capture': "🎤 Aucun micro trouvé sur cet appareil.",
+                    'network': "🌐 Erreur réseau, vérifie ta connexion.",
+                    'service-not-allowed': "⛔ Service non autorisé. Utilise Chrome sur HTTPS."
+                };
+                ajouterMessage(msgs[e.error] || `⚠️ Erreur micro : ${e.error}`, "ia");
             };
             reconnaissance.onend = function() {
                 btnMicro.classList.remove("actif");
