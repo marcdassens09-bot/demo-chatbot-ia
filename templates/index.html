@@ -7,25 +7,34 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f5f7fb; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
         .modal { background: white; border-radius: 20px; padding: 40px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
         .modal h2 { color: #0066cc; margin-bottom: 10px; font-size: 24px; }
         .modal p { color: #666; margin-bottom: 25px; font-size: 14px; }
         .modal input { width: 100%; padding: 12px 18px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 15px; margin-bottom: 15px; outline: none; transition: border 0.3s; }
         .modal input:focus { border-color: #0066cc; }
-        .modal button { width: 100%; padding: 12px; background: linear-gradient(135deg, #0066cc, #00aaff); color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; }
+        .modal button { width: 100%; padding: 12px; background: linear-gradient(135deg, #0066cc, #00aaff); color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
         .modal button:hover { opacity: 0.9; }
+
+        /* CONTAINER */
         .container { width: 100%; max-width: 700px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; height: 90vh; display: flex; flex-direction: column; }
         .header { background: linear-gradient(135deg, #0066cc, #00aaff); padding: 20px; display: flex; align-items: center; gap: 15px; }
         .avatar { width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
         .header-info h1 { color: white; font-size: 20px; }
         .header-info p { color: rgba(255,255,255,0.8); font-size: 13px; }
         .status { width: 10px; height: 10px; background: #00ff88; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .badge-demo { background: #ff6600; color: white; font-size: 11px; padding: 3px 10px; border-radius: 10px; margin-left: auto; }
+
+        /* CHAT */
         #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .message-user { display: flex; justify-content: flex-end; }
         .message-user span { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; padding: 12px 18px; border-radius: 18px 18px 4px 18px; max-width: 70%; line-height: 1.5; }
         .message-ia { display: flex; justify-content: flex-start; gap: 10px; align-items: flex-end; }
         .message-ia span { background: #f0f4ff; color: #333; padding: 12px 18px; border-radius: 18px 18px 18px 4px; max-width: 70%; line-height: 1.5; }
+
+        /* TYPING */
         .typing { display: none; padding: 0 20px 10px; align-items: center; gap: 10px; }
         .typing.active { display: flex; }
         .typing-dots { background: #f0f4ff; padding: 12px 18px; border-radius: 18px; display: flex; gap: 5px; }
@@ -33,52 +42,74 @@
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
-        .suggestions { padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .suggestions button { background: #f0f4ff; border: 1px solid #0066cc; color: #0066cc; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; }
-        .suggestions button:hover { background: #0066cc; color: white; }
-        .input-zone { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        #message { flex: 1; padding: 12px 18px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 15px; outline: none; }
+
+        /* SUGGESTIONS */
+        .suggestions { padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid #f0f0f0; }
+        .suggestions-label { width: 100%; font-size: 12px; color: #999; margin-bottom: 2px; }
+        .btn-suggestion {
+            padding: 8px 14px;
+            background: #f0f4ff;
+            color: #0066cc;
+            border: 1px solid #cce0ff;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-suggestion:hover { background: #0066cc; color: white; border-color: #0066cc; }
+
+        /* INPUT */
+        .input-zone { padding: 15px 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        #message { flex: 1; padding: 12px 18px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 15px; outline: none; transition: border 0.3s; }
         #message:focus { border-color: #0066cc; }
-        #envoyer { width: 50px; height: 50px; background: linear-gradient(135deg, #0066cc, #00aaff); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #envoyer { width: 50px; height: 50px; background: linear-gradient(135deg, #0066cc, #00aaff); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         #envoyer svg { width: 20px; height: 20px; fill: white; }
-        .badge-demo { background: #ff6600; color: white; font-size: 11px; padding: 3px 10px; border-radius: 10px; margin-left: auto; }
     </style>
 </head>
 <body>
 
+    <!-- MODAL D'ENTRÉE -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <h2>🤖 Démo Chatbot IA</h2>
-            <p>Entrez le nom de votre entreprise pour voir votre assistant virtuel personnalisé !</p>
+            <p>Entrez le nom de votre entreprise pour voir votre assistant virtuel personnalisé en action !</p>
             <input type="text" id="nom-entreprise" placeholder="Ex: Boulangerie Martin, Garage Dupont..." />
             <input type="text" id="nom-contact" placeholder="Votre prénom" />
             <input type="email" id="email-contact" placeholder="Votre email" />
-            <button onclick="demarrerDemo()">Voir ma démo personnalisée →</button>
+            <button id="btn-demo" onclick="demarrerDemo()">Voir ma démo personnalisée →</button>
         </div>
     </div>
 
+    <!-- CHAT -->
     <div class="container">
         <div class="header">
             <div class="avatar">🤖</div>
             <div class="header-info">
                 <h1 id="titre-assistant">Assistant IA</h1>
-                <p><span class="status"></span>En ligne - Répond instantanément</p>
+                <p><span class="status"></span>En ligne — Répond instantanément</p>
             </div>
             <span class="badge-demo">DÉMO GRATUITE</span>
         </div>
+
         <div id="chat-box"></div>
+
         <div class="typing" id="typing">
             <div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
             <div class="typing-dots"><span></span><span></span><span></span></div>
         </div>
-        <div class="suggestions">
-            <button onclick="suggerer('Urgences et hopitaux proches ?')">🚑 Urgences</button>
-            <button onclick="suggerer('Quelles randonnees faire dans le coin ?')">🥾 Randonnées</button>
-            <button onclick="suggerer('Ou faire mes courses ?')">🛒 Commerces</button>
-            <button onclick="suggerer('Quelle est la meteo ?')">🌦️ Météo</button>
-            <button onclick="suggerer('Quels festivals en Ariege ?')">🎭 Festivals</button>
-            <button onclick="suggerer('Ou trouver un veterinaire ?')">🐾 Vétérinaire</button>
+
+        <!-- BOUTONS DE SUGGESTIONS -->
+        <div class="suggestions" id="suggestions">
+            <span class="suggestions-label">Questions rapides :</span>
+            <button class="btn-suggestion" onclick="suggerer('🚨 Urgences médicales et contacts')">🚨 Urgences</button>
+            <button class="btn-suggestion" onclick="suggerer('🥾 Randonnées à faire en Ariège')">🥾 Randonnées</button>
+            <button class="btn-suggestion" onclick="suggerer('🛒 Commerces et services proches')">🛒 Commerces</button>
+            <button class="btn-suggestion" onclick="suggerer('🌤️ Météo en Ariège')">🌤️ Météo</button>
+            <button class="btn-suggestion" onclick="suggerer('🎉 Festivals et événements en Ariège')">🎉 Festivals</button>
+            <button class="btn-suggestion" onclick="suggerer('🐾 Vétérinaire d\'urgence')">🐾 Vétérinaire</button>
         </div>
+
         <div class="input-zone">
             <input type="text" id="message" placeholder="Écrivez votre message..." />
             <button id="envoyer">
@@ -95,49 +126,67 @@
             const entreprise = document.getElementById("nom-entreprise").value.trim();
             const contact = document.getElementById("nom-contact").value.trim();
             const email = document.getElementById("email-contact").value.trim();
-            if (!entreprise || !contact || !email) { alert("Merci de remplir tous les champs !"); return; }
+
+            if (!entreprise || !contact || !email) {
+                alert("Merci de remplir tous les champs !");
+                return;
+            }
+
             nomEntreprise = entreprise;
             document.getElementById("modal").style.display = "none";
-            document.getElementById("titre-assistant").textContent = "Assistant " + entreprise;
-            ajouterMessage("👋 " + entreprise + " — Comment puis-je vous aider ? / How can I help you?", "ia");
+            document.getElementById("titre-assistant").textContent = `Assistant ${entreprise}`;
+            ajouterMessage(`👋 Bonjour ! Je suis l'assistant virtuel de <strong>${entreprise}</strong>. Comment puis-je vous aider aujourd'hui ? / How can I help you?`, "ia");
         }
+
+        document.getElementById("email-contact").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") demarrerDemo();
+        });
 
         document.getElementById("envoyer").addEventListener("click", envoyer);
         document.getElementById("message").addEventListener("keypress", function(e) {
             if (e.key === "Enter") envoyer();
         });
 
+        function suggerer(texte) {
+            document.getElementById("message").value = texte;
+            envoyer();
+        }
+
         async function envoyer() {
             const input = document.getElementById("message");
             const texte = input.value.trim();
             if (!texte) return;
+
+            document.getElementById("suggestions").style.display = "none";
+
             ajouterMessage(texte, "user");
             input.value = "";
             document.getElementById("typing").classList.add("active");
-            const reponse = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: texte, entreprise: nomEntreprise, historique: historique })
-            });
-            document.getElementById("typing").classList.remove("active");
-            const data = await reponse.json();
-            historique = data.historique;
-            ajouterMessage(data.reponse, "ia");
-        }
 
-        async function suggerer(texte) {
-            document.getElementById("message").value = texte;
-            await envoyer();
+            try {
+                const reponse = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: texte, entreprise: nomEntreprise, historique: historique })
+                });
+                const data = await reponse.json();
+                historique = data.historique;
+                ajouterMessage(data.reponse, "ia");
+            } catch (err) {
+                ajouterMessage("⚠️ Erreur de connexion, veuillez réessayer.", "ia");
+            } finally {
+                document.getElementById("typing").classList.remove("active");
+            }
         }
 
         function ajouterMessage(texte, qui) {
             const box = document.getElementById("chat-box");
             const div = document.createElement("div");
-            div.className = "message-" + qui;
+            div.className = `message-${qui}`;
             if (qui === "ia") {
-                div.innerHTML = '<div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div><span>' + texte + '</span>';
+                div.innerHTML = `<div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div><span>${texte}</span>`;
             } else {
-                div.innerHTML = "<span>" + texte + "</span>";
+                div.innerHTML = `<span>${texte}</span>`;
             }
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;

@@ -81,7 +81,7 @@ FESTIVALS ET ÉVÉNEMENTS :
 
 MÉTÉO :
 - Pour la météo actuelle et les prévisions, utilise la recherche web
-
+Ne fais jamais de commentaires sur la qualite des questions comme "super question" ou "excellente question". Reponds directement sans flatter.
 Pour toute information sur les événements actuels, météo, restaurants ou actualités, utilise la recherche web.""",
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=historique
