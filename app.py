@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-from anthropic import Anthropi
+from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
 

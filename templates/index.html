@@ -33,6 +33,9 @@
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+        .suggestions { padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .suggestions button { background: #f0f4ff; border: 1px solid #0066cc; color: #0066cc; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+        .suggestions button:hover { background: #0066cc; color: white; }
         .input-zone { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
         #message { flex: 1; padding: 12px 18px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 15px; outline: none; }
         #message:focus { border-color: #0066cc; }
@@ -46,7 +49,7 @@
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <h2>🤖 Démo Chatbot IA</h2>
-            <p>Entrez le nom de votre entreprise pour voir votre assistant virtuel personnalisé en action !</p>
+            <p>Entrez le nom de votre entreprise pour voir votre assistant virtuel personnalisé !</p>
             <input type="text" id="nom-entreprise" placeholder="Ex: Boulangerie Martin, Garage Dupont..." />
             <input type="text" id="nom-contact" placeholder="Votre prénom" />
             <input type="email" id="email-contact" placeholder="Votre email" />
@@ -68,6 +71,14 @@
             <div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
             <div class="typing-dots"><span></span><span></span><span></span></div>
         </div>
+        <div class="suggestions">
+            <button onclick="suggerer('Urgences et hopitaux proches ?')">🚑 Urgences</button>
+            <button onclick="suggerer('Quelles randonnees faire dans le coin ?')">🥾 Randonnées</button>
+            <button onclick="suggerer('Ou faire mes courses ?')">🛒 Commerces</button>
+            <button onclick="suggerer('Quelle est la meteo ?')">🌦️ Météo</button>
+            <button onclick="suggerer('Quels festivals en Ariege ?')">🎭 Festivals</button>
+            <button onclick="suggerer('Ou trouver un veterinaire ?')">🐾 Vétérinaire</button>
+        </div>
         <div class="input-zone">
             <input type="text" id="message" placeholder="Écrivez votre message..." />
             <button id="envoyer">
@@ -75,6 +86,7 @@
             </button>
         </div>
     </div>
+
     <script>
         let nomEntreprise = "";
         let historique = [];
@@ -86,8 +98,8 @@
             if (!entreprise || !contact || !email) { alert("Merci de remplir tous les champs !"); return; }
             nomEntreprise = entreprise;
             document.getElementById("modal").style.display = "none";
-            document.getElementById("titre-assistant").textContent = `Assistant ${entreprise}`;
-            ajouterMessage(`👋 ${entreprise} — Comment puis-je vous aider ? / How can I help you?`, "ia");
+            document.getElementById("titre-assistant").textContent = "Assistant " + entreprise;
+            ajouterMessage("👋 " + entreprise + " — Comment puis-je vous aider ? / How can I help you?", "ia");
         }
 
         document.getElementById("envoyer").addEventListener("click", envoyer);
@@ -113,14 +125,19 @@
             ajouterMessage(data.reponse, "ia");
         }
 
+        async function suggerer(texte) {
+            document.getElementById("message").value = texte;
+            await envoyer();
+        }
+
         function ajouterMessage(texte, qui) {
             const box = document.getElementById("chat-box");
             const div = document.createElement("div");
-            div.className = `message-${qui}`;
+            div.className = "message-" + qui;
             if (qui === "ia") {
-                div.innerHTML = `<div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div><span>${texte}</span>`;
+                div.innerHTML = '<div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div><span>' + texte + '</span>';
             } else {
-                div.innerHTML = `<span>${texte}</span>`;
+                div.innerHTML = "<span>" + texte + "</span>";
             }
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
