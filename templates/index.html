@@ -131,6 +131,27 @@
         let nomEntreprise = "";
         let historique = [];
 
+        // Détection du secteur → avatar
+        function detecterAvatar(nom) {
+            const n = nom.toLowerCase();
+            if (/boulan|pain|pastiss|biscuit|cake|pâtiss/.test(n)) return "🍞";
+            if (/garage|auto|mécani|voiture|carross|pneu|motor/.test(n)) return "🚗";
+            if (/coiff|beauty|salon|barbier|ongle|esthé/.test(n)) return "💇";
+            if (/restaurant|bistro|brasserie|pizza|kebab|sushi|snack|café|bar/.test(n)) return "🍽️";
+            if (/médecin|docteur|cabinet|santé|pharma|kiné|dentiste/.test(n)) return "🩺";
+            if (/plomb|électri|chauff|maçon|bâtiment|construct|réno|peintre/.test(n)) return "🔧";
+            if (/immobilier|agence|logement|appart/.test(n)) return "🏠";
+            if (/hotel|gîte|chambre|héberg|camping/.test(n)) return "🏨";
+            if (/fleur|jardin|paysag|plant/.test(n)) return "🌸";
+            if (/sport|fitness|gym|coach|yoga/.test(n)) return "💪";
+            if (/vétéri|animal|chien|chat|pet/.test(n)) return "🐾";
+            if (/informatiq|digital|web|tech|soft|it /.test(n)) return "💻";
+            if (/école|cours|formation|prof|tutor/.test(n)) return "📚";
+            if (/nettoyage|cleanpro|ménage|entretien|propre/.test(n)) return "🧹";
+            if (/transport|livraison|déménag|taxi|logistiq/.test(n)) return "🚚";
+            return "🤖"; // défaut
+        }
+
         function demarrerDemo() {
             const entreprise = document.getElementById("nom-entreprise").value.trim();
             const contact = document.getElementById("nom-contact").value.trim();
@@ -142,8 +163,12 @@
             }
 
             nomEntreprise = entreprise;
+            const avatar = detecterAvatar(entreprise);
             document.getElementById("modal").style.display = "none";
             document.getElementById("titre-assistant").textContent = `Assistant ${entreprise}`;
+            // Met à jour tous les avatars sur la page
+            document.querySelectorAll(".avatar").forEach(el => el.textContent = avatar);
+            document.querySelectorAll(".avatar-msg").forEach(el => el.textContent = avatar);
             ajouterMessage(`👋 Bonjour ! Je suis l'assistant virtuel de <strong>${entreprise}</strong>. Comment puis-je vous aider aujourd'hui ? / How can I help you?`, "ia");
         }
 
@@ -193,13 +218,21 @@
                 btnMicro.classList.remove("actif");
             };
 
-            btnMicro.addEventListener("click", function() {
+            btnMicro.addEventListener("click", async function() {
                 if (btnMicro.classList.contains("actif")) {
                     reconnaissance.stop();
                     btnMicro.classList.remove("actif");
-                } else {
+                    return;
+                }
+                // Demande permission micro avant de lancer
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(t => t.stop()); // libère le micro
+                    reconnaissance.lang = navigator.language || 'fr-FR';
                     reconnaissance.start();
                     btnMicro.classList.add("actif");
+                } catch(err) {
+                    ajouterMessage("⛔ Micro bloqué — clique sur le cadenas 🔒 dans la barre d'adresse et autorise le micro.", "ia");
                 }
             });
         } else {
@@ -240,7 +273,7 @@
             const div = document.createElement("div");
             div.className = `message-${qui}`;
             if (qui === "ia") {
-                div.innerHTML = `<div style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div><span>${texte}</span>`;
+                div.innerHTML = `<div class="avatar-msg" style="width:35px;height:35px;background:linear-gradient(135deg,#0066cc,#00aaff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${detecterAvatar(nomEntreprise)}</div><span>${texte}</span>`;
             } else {
                 div.innerHTML = `<span>${texte}</span>`;
             }
