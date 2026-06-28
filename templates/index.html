@@ -17,6 +17,10 @@
         .modal input:focus { border-color: #0066cc; }
         .modal button { width: 100%; padding: 12px; background: linear-gradient(135deg, #0066cc, #00aaff); color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
         .modal button:hover { opacity: 0.9; }
+        @keyframes modalAppear { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal { animation: modalAppear 0.4s ease-out; }
+        @keyframes overlayAppear { from { opacity: 0; } to { opacity: 1; } }
+        .modal-overlay { animation: overlayAppear 0.3s ease-out; }
 
         /* CONTAINER */
         .container { width: 100%; max-width: 700px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; height: 90vh; display: flex; flex-direction: column; }
