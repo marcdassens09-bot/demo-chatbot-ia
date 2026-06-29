@@ -14,6 +14,7 @@ GMAIL_USER = "mpsolutionsia@gmail.com"
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 
 def envoyer_notification(nom, email, entreprise):
+    print(f"Tentative envoi email pour {nom} - {email} - {entreprise}")
     try:
         msg = MIMEText(f"""
 Nouveau prospect sur la demo !
@@ -26,11 +27,11 @@ Contacte-le rapidement !
         """)
         msg['Subject'] = f"Nouveau prospect : {entreprise}"
         msg['From'] = GMAIL_USER
-        msg['To'] = GMAIL_USER
-
+        msg['To'] = "marcdassens09@gmail.com"
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(GMAIL_USER, GMAIL_PASSWORD)
             server.send_message(msg)
+        print("Email envoye avec succes !")
     except Exception as e:
         print(f"Erreur email : {e}")
 
