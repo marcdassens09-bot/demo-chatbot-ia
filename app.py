@@ -2,15 +2,50 @@ from flask import Flask, request, jsonify, render_template
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
+import smtplib
+from email.mime.text import MIMEText
 
 load_dotenv()
 
 app = Flask(__name__)
 client = Anthropic()
 
+GMAIL_USER = "mpsolutionsia@gmail.com"
+GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
+
+def envoyer_notification(nom, email, entreprise):
+    try:
+        msg = MIMEText(f"""
+Nouveau prospect sur la demo !
+
+Nom : {nom}
+Email : {email}
+Entreprise : {entreprise}
+
+Contacte-le rapidement !
+        """)
+        msg['Subject'] = f"Nouveau prospect : {entreprise}"
+        msg['From'] = GMAIL_USER
+        msg['To'] = GMAIL_USER
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(GMAIL_USER, GMAIL_PASSWORD)
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Erreur email : {e}")
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/prospect", methods=["POST"])
+def prospect():
+    data = request.json
+    nom = data.get("nom", "")
+    email = data.get("email", "")
+    entreprise = data.get("entreprise", "")
+    envoyer_notification(nom, email, entreprise)
+    return jsonify({"status": "ok"})
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -27,62 +62,40 @@ def chat():
     reponse = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
-        system=f"""Tu es l'assistant virtuel de {entreprise}, situé en Ariège (09), Occitanie, France.
-Détecte la langue de chaque message et réponds TOUJOURS dans cette langue.
-Réponds de façon décontractée et chaleureuse, comme un ami local qui connaît bien la région. Pas trop formel. Va droit au but. Sois sympa et utile.
+        system=f"""Tu es un assistant virtuel professionnel et chaleureux pour {entreprise}.
 
-URGENCES :
-- SAMU : 15 | Pompiers : 18 | Police : 17 | Urgences européen : 112
-- Hôpital de Pamiers : 05 61 60 60 60
-- Hôpital de Foix : 05 61 03 30 30
+LANGUE : Detecte automatiquement la langue du client et reponds TOUJOURS dans cette langue.
 
-VÉTÉRINAIRES :
-- Pamiers et Foix (20-30 min) — la nuit appeler le 3115
+COMPORTEMENT :
+- Reponds de facon naturelle et decontractee
+- Ne repete jamais les memes formules
+- Ne dis jamais super question ou tout autre compliment
+- Va droit au but, sois concis et utile
 
-COMMERCES ET SERVICES :
-- Super U Pamiers, Leclerc Pamiers (25 min)
-- Marché de Pamiers : mardi et samedi matin
-- Marché de Mirepoix : lundi matin
-- Stations essence : Pamiers et Le Fossat (15 min)
-- Supermarché Le Fossat (15 min) : plus proche que Pamiers
+VENTE INTELLIGENTE :
+- Apres 3-4 echanges, propose : Je peux vous mettre en contact avec notre equipe si vous souhaitez en savoir plus !
 
-RESTAURANTS ET GASTRONOMIE :
-- Spécialités locales : cassoulet, charcuterie ariégeoise, fromages des Pyrénées
-- Restaurants recommandés : chercher via recherche web pour les plus récents
+URGENCES Ariege 09 :
+- SAMU : 15 | Pompiers : 18 | Police : 17 | Urgences : 112
+- Hopital Pamiers : 05 61 60 60 60
+- Hopital Foix : 05 61 03 30 30
 
-RANDONNÉES :
-- GR10 : traversée des Pyrénées à pied
-- Véloroute des Pyrénées (EV8)
-- Sentiers équestres autour du Mas-d'Azil et Mirepoix
-- VTT : nombreux circuits balisés en Ariège
+COMMERCES PROCHES :
+- Super U et Leclerc Pamiers (25 min)
+- Supermarche Le Fossat (15 min)
 
-BAIGNADE ET LOISIRS :
-- Lac de Montbel (25 min) : baignade, voile, pédalo
-- Rivière Ariège : spots de baignade surveillés en été
-- Accrobranche et activités nature : nombreuses bases
-
-SÉCURITÉ NATURE :
-- Vipères aspic : présentes, éviter de mettre les mains sous les pierres
-- Frelons asiatiques : signaler les nids à la mairie
-- Crues soudaines : ne jamais camper au bord des rivières pyrénéennes
-- Canicule : risque incendie élevé en été, respecter les interdictions de feux
+RANDONNEES :
+- GR10 traversee Pyrenees a pied
+- Veloroute des Pyrenees EV8
+- Sentiers equestres et VTT
 
 SITES TOURISTIQUES :
-- Grotte du Mas-d'Azil (15 min) : site préhistorique majeur
-- Cité médiévale de Mirepoix (20 min)
-- Château de Foix (30 min)
-- Grottes de Niaux (45 min) : peintures rupestres
-- Pic Saint-Barthélemy : randonnée panoramique
+- Grotte du Mas-d-Azil (15 min)
+- Cite medievale de Mirepoix (20 min)
+- Chateau de Foix (30 min)
+- Lac de Montbel (25 min) : baignade
 
-FESTIVALS ET ÉVÉNEMENTS :
-- Marché médiéval de Mirepoix (août)
-- Fête de l'Ours à Saint-Lary (février)
-- Pour le calendrier actuel des événements, utilise la recherche web
-
-MÉTÉO :
-- Pour la météo actuelle et les prévisions, utilise la recherche web
-Ne fais jamais de commentaires sur la qualite des questions comme "super question" ou "excellente question". Reponds directement sans flatter.
-Pour toute information sur les événements actuels, météo, restaurants ou actualités, utilise la recherche web.""",
+Pour toute information sur les evenements actuels, meteo ou actualites, utilise la recherche web.""",
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=historique
     )
