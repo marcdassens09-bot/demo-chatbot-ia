@@ -4,12 +4,11 @@ from dotenv import load_dotenv
 import os
 import smtplib
 from email.mime.text import MIMEText
+from clients import get_client
 
 load_dotenv()
-
 app = Flask(__name__)
 client = Anthropic()
-
 GMAIL_USER = "mpsolutionsia@gmail.com"
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 
@@ -18,11 +17,9 @@ def envoyer_notification(nom, email, entreprise):
     try:
         msg = MIMEText(f"""
 Nouveau prospect sur la demo !
-
 Nom : {nom}
 Email : {email}
 Entreprise : {entreprise}
-
 Contacte-le rapidement !
         """)
         msg['Subject'] = f"Nouveau prospect : {entreprise}"
@@ -42,9 +39,11 @@ def index():
 @app.route("/test-widget.html")
 def test_widget():
     return send_from_directory("templates/static", "test-widget.html")
+
 @app.route("/static/widget.js")
 def serve_widget():
     return send_from_directory("templates/static", "widget.js")
+
 @app.route("/prospect", methods=["POST"])
 def prospect():
     data = request.json
@@ -58,50 +57,27 @@ def prospect():
 def chat():
     data = request.json
     message = data.get("message")
-    entreprise = data.get("entreprise", "votre entreprise")
+    client_id = data.get("entreprise", "default")
+    fiche = get_client(client_id)
     historique = data.get("historique", [])
-
     historique.append({
         "role": "user",
         "content": message
     })
-
     reponse = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
-        system=f"""Tu es un assistant virtuel professionnel et chaleureux pour {entreprise}.
-
+        system=f"""Tu es un assistant virtuel professionnel et chaleureux pour {fiche['nom']}, {fiche['description']}.
 LANGUE : Detecte automatiquement la langue du client et reponds TOUJOURS dans cette langue.
-
 COMPORTEMENT :
 - Reponds de facon naturelle et decontractee
 - Ne repete jamais les memes formules
 - Ne dis jamais super question ou tout autre compliment
 - Va droit au but, sois concis et utile
-
 VENTE INTELLIGENTE :
 - Apres 3-4 echanges, propose : Je peux vous mettre en contact avec notre equipe si vous souhaitez en savoir plus !
-
-URGENCES Ariege 09 :
-- SAMU : 15 | Pompiers : 18 | Police : 17 | Urgences : 112
-- Hopital Pamiers : 05 61 60 60 60
-- Hopital Foix : 05 61 03 30 30
-
-COMMERCES PROCHES :
-- Super U et Leclerc Pamiers (25 min)
-- Supermarche Le Fossat (15 min)
-
-RANDONNEES :
-- GR10 traversee Pyrenees a pied
-- Veloroute des Pyrenees EV8
-- Sentiers equestres et VTT
-
-SITES TOURISTIQUES :
-- Grotte du Mas-d-Azil (15 min)
-- Cite medievale de Mirepoix (20 min)
-- Chateau de Foix (30 min)
-- Lac de Montbel (25 min) : baignade
-
+INFORMATIONS SUR L'ENTREPRISE :
+{fiche['infos']}
 Pour toute information sur les evenements actuels, meteo ou actualites, utilise la recherche web.""",
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=historique
@@ -110,15 +86,12 @@ Pour toute information sur les evenements actuels, meteo ou actualites, utilise 
     for block in reponse.content:
         if block.type == "text":
             texte += block.text
-
     if not texte:
         texte = "Je recherche des informations pour vous..."
-
     historique.append({
         "role": "assistant",
         "content": texte
     })
-
     return jsonify({"reponse": texte, "historique": historique})
 
 port = int(os.environ.get("PORT", 5000))
