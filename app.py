@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
@@ -39,6 +39,12 @@ Contacte-le rapidement !
 def index():
     return render_template("index.html")
 
+@app.route("/test-widget.html")
+def test_widget():
+    return send_from_directory("templates/static", "test-widget.html")
+@app.route("/static/widget.js")
+def serve_widget():
+    return send_from_directory("templates/static", "widget.js")
 @app.route("/prospect", methods=["POST"])
 def prospect():
     data = request.json
@@ -100,7 +106,6 @@ Pour toute information sur les evenements actuels, meteo ou actualites, utilise 
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=historique
     )
-
     texte = ""
     for block in reponse.content:
         if block.type == "text":
