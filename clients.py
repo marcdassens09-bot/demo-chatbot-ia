@@ -54,6 +54,17 @@ Horaires d'accueil : basse saison 9h-12h et 16h-19h, haute saison 8h-13h et 15h-
 Arrivee entre 15h et 19h, depart entre 9h et 11h.
 """
     },
+    "kine": {
+        "nom": "Cabinet Kine Bien-Etre",
+        "secteur": "kinesitherapie",
+        "description": "un cabinet de kinesitherapie",
+        "infos": """
+Prises en charge : reeducation post-operatoire, kinesitherapie du sport, massages therapeutiques.
+Horaires : du lundi au vendredi 8h-19h, samedi matin sur rendez-vous.
+Consultations uniquement sur rendez-vous, prescription medicale requise.
+Prise en charge Securite Sociale et mutuelles.
+"""
+    },
 }
 
 def get_client(client_id):
