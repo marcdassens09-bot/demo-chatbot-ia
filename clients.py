@@ -40,6 +40,20 @@ Horaires : du lundi au vendredi 8h-17h.
 Devis gratuit, deplacement dans un rayon de 30km.
 """
     },
+    "camping": {
+        "nom": "Camping Les Eychecadous",
+        "secteur": "camping et hebergement touristique",
+        "description": "un camping familial 3 etoiles a Artigat en Ariege",
+        "infos": """
+Situe en bordure de la riviere Leze, cadre naturel et calme.
+Hebergements : 39 emplacements pour tente/caravane/camping-car, 9 bungalows toiles, 4 mobil-homes.
+Piscine ouverte du 15 mai au 15 septembre.
+Services : buvette, restauration snack, wifi gratuit, animaux acceptes.
+Telephone : 05 67 44 51 65.
+Horaires d'accueil : basse saison 9h-12h et 16h-19h, haute saison 8h-13h et 15h-20h.
+Arrivee entre 15h et 19h, depart entre 9h et 11h.
+"""
+    },
 }
 
 def get_client(client_id):
