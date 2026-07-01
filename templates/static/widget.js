@@ -59,10 +59,18 @@
   const inputEl = win.querySelector("#mpia-input");
   let historique = [];
 
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   function addMessage(text, sender) {
     const msg = document.createElement("div");
     msg.className = "mpia-msg " + sender;
-    msg.textContent = text;
+    let safe = escapeHtml(text);
+    safe = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    msg.innerHTML = safe;
     messagesEl.appendChild(msg);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
