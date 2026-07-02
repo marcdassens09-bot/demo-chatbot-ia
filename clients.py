@@ -76,6 +76,17 @@ Zone d'intervention : Ariege.
 Visites sur rendez-vous uniquement.
 """
     },
+    "juridique": {
+        "nom": "Cabinet Juridique et Comptable Ariege",
+        "secteur": "conseil juridique et comptable",
+        "description": "un cabinet proposant conseil juridique, comptabilite et demarches administratives",
+        "infos": """
+Services : conseil juridique, comptabilite, creation d'entreprise, declarations fiscales.
+Horaires : du lundi au vendredi 9h-12h30 et 14h-17h30.
+Consultations uniquement sur rendez-vous.
+Premier rendez-vous de decouverte gratuit.
+"""
+    },
 }
 
 def get_client(client_id):
