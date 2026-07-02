@@ -65,6 +65,17 @@ Consultations uniquement sur rendez-vous, prescription medicale requise.
 Prise en charge Securite Sociale et mutuelles.
 """
     },
+    "immo": {
+        "nom": "Agence Immo Ariege",
+        "secteur": "agence immobiliere",
+        "description": "une agence immobiliere locale",
+        "infos": """
+Services : vente, location, estimation gratuite.
+Horaires : du lundi au vendredi 9h-12h30 et 14h-18h30, samedi matin sur rendez-vous.
+Zone d'intervention : Ariege.
+Visites sur rendez-vous uniquement.
+"""
+    },
 }
 
 def get_client(client_id):
