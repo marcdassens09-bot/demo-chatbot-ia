@@ -1,1 +1,5 @@
+__pycache__/
+app_backup.py
+fix_erreurs.py
+*.pyc
 .env
