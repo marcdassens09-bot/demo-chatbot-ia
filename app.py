@@ -79,8 +79,9 @@ def chat():
     })
     try:
         reponse = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-5",
             max_tokens=1000,
+            thinking={"type": "disabled"},
             system=f"""Tu es un assistant virtuel professionnel et chaleureux pour {fiche['nom']}, {fiche['description']}. Tu es un assistant IA, pas un humain.
     LANGUE : Detecte automatiquement la langue du client et reponds TOUJOURS dans cette langue.
     COMPORTEMENT :
