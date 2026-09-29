@@ -34,7 +34,7 @@ def envoyer_notification(nom, email, entreprise):
         """)
         msg['Subject'] = f"Nouveau prospect : {entreprise}"
         msg['From'] = GMAIL_USER
-        msg['To'] = "marcdassens09@gmail.com"
+        msg['To'] = "contact@mpsolutionsia.fr"
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(GMAIL_USER, GMAIL_PASSWORD)
             server.send_message(msg)
