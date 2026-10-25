@@ -94,6 +94,13 @@
   .ligne { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--bord); font-size: 14px; }
   .ligne b { font-weight: 500; color: var(--gris); }
   .ligne.urgent span { color: #b3261e; font-weight: 600; }
+  .vu-ia { display: flex; flex-direction: column; gap: 8px; }
+  .vu-ia div { font-size: 14px; padding: 9px 12px; border-radius: 10px; white-space: pre-wrap; word-wrap: break-word; }
+  .vu-ia .c { background: var(--orange-doux); }
+  .vu-ia .a { background: var(--vert-doux); }
+  .vu-ia b { display: block; font-size: 11px; color: var(--gris); font-weight: 500; margin-bottom: 2px; }
+  .masque { background: var(--vert); color: #fff; padding: 1px 6px; border-radius: 5px; font-size: 12px; white-space: nowrap; }
+  .btn-transparence { width: 100%; margin-top: 8px; font-size: 14px; }
   .protege { margin-top: 16px; background: var(--vert-doux); border-left: 4px solid var(--vert); padding: 12px 14px; border-radius: 8px; font-size: 13px; }
   .fiche-pied { padding: 0 22px 20px; text-align: right; }
 
@@ -215,6 +222,7 @@
           <h3><span class="prefixe">++</span>Ce que reçoit l'artisan</h3>
           <p>Après quelques échanges, voyez la fiche que l'artisan recevrait : le besoin, l'urgence, la commune, le créneau.</p>
           <button class="btn btn-orange" id="btn-fiche">Voir la fiche de demande</button>
+          <button class="btn btn-ligne btn-transparence" id="btn-vu-ia">Ce que l'IA a reçu</button>
         </div>
         <div class="encart">
           <h3><span class="prefixe">-&gt;</span>Essayez par exemple</h3>
@@ -236,7 +244,7 @@
   <div class="fiche">
     <div class="fiche-tete">
       <small id="fiche-entreprise"></small>
-      <h2>Nouvelle demande client</h2>
+      <h2 id="fiche-titre">Nouvelle demande client</h2>
     </div>
     <div class="fiche-corps" id="fiche-corps"></div>
     <div class="fiche-pied"><button class="btn btn-ligne" id="btn-fermer">Fermer</button></div>
@@ -469,6 +477,7 @@
         var f = d.fiche, c = d.contacts, corps = $("fiche-corps");
         corps.innerHTML = "";
         $("fiche-entreprise").textContent = d.entreprise;
+        $("fiche-titre").textContent = "Nouvelle demande client";
         var urgent = /^oui/i.test(f.urgence || "");
         corps.appendChild(ligne("Prénom", f.prenom));
         corps.appendChild(ligne("Commune", f.commune));
@@ -488,6 +497,42 @@
       .then(function () { bouton.disabled = false; bouton.textContent = "Voir la fiche de demande"; });
   };
   $("btn-fermer").onclick = function () { $("voile").classList.add("cache"); };
+
+  // ---- transparence : la conversation exactement comme l'IA l'a recue ----
+  function avecMasques(conteneur, texte) {
+    texte.split(/(\[[A-ZÉÈ ]*MASQUÉE?\])/).forEach(function (morceau) {
+      if (/^\[[A-ZÉÈ ]*MASQUÉE?\]$/.test(morceau)) {
+        var m = document.createElement("span"); m.className = "masque";
+        m.textContent = morceau.slice(1, -1).toLowerCase();
+        conteneur.appendChild(m);
+      } else if (morceau) {
+        conteneur.appendChild(document.createTextNode(morceau));
+      }
+    });
+  }
+
+  $("btn-vu-ia").onclick = function () {
+    if (!historique.length) { bulle("Écrivez d'abord quelques messages à l'assistant.", "info"); return; }
+    var corps = $("fiche-corps"); corps.innerHTML = "";
+    $("fiche-entreprise").textContent = metier.nom;
+    $("fiche-titre").textContent = "Ce que l'IA a reçu";
+    var intro = document.createElement("p");
+    intro.style.cssText = "font-size:13px;color:var(--gris);margin-bottom:12px";
+    intro.textContent = "Voici, mot pour mot, la conversation telle qu'elle est envoyée à l'IA. Les coordonnées du client sont remplacées avant l'envoi.";
+    corps.appendChild(intro);
+    var liste = document.createElement("div"); liste.className = "vu-ia";
+    historique.forEach(function (m) {
+      var d = document.createElement("div"); d.className = m.role === "user" ? "c" : "a";
+      var b = document.createElement("b"); b.textContent = m.role === "user" ? "Client" : "Assistant";
+      d.appendChild(b); avecMasques(d, m.content);
+      liste.appendChild(d);
+    });
+    corps.appendChild(liste);
+    var p = document.createElement("div"); p.className = "protege";
+    p.textContent = "Écouter, comprendre, servir — en toute transparence. Les numéros de téléphone, emails et cartes bancaires ne sont jamais envoyés à l'IA : seul l'artisan les reçoit, dans sa fiche.";
+    corps.appendChild(p);
+    $("voile").classList.remove("cache");
+  };
   $("voile").onclick = function (e) { if (e.target === $("voile")) $("voile").classList.add("cache"); };
 </script>
 </body>
