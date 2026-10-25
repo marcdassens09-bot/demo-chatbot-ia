@@ -73,6 +73,10 @@
   .saisie input { flex: 1; padding: 12px 14px; border: 1.5px solid var(--bord); border-radius: 10px; font-family: inherit; font-size: 15px; color: var(--vert); outline: none; min-width: 0; }
   .saisie input:focus { border-color: var(--orange); }
 
+  #btn-micro { width: 48px; flex-shrink: 0; padding: 0; font-size: 20px; background: #fff; border: 1.5px solid var(--orange); border-radius: 10px; cursor: pointer; }
+  #btn-micro:hover { background: var(--orange-doux); }
+  #btn-micro.ecoute { background: #b3261e; border-color: #b3261e; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(179,38,30,.5); } 50% { box-shadow: 0 0 0 8px rgba(179,38,30,0); } }
   .cote { display: flex; flex-direction: column; gap: 14px; }
   .encart { border: 1px solid var(--bord); border-radius: 14px; padding: 18px; }
   .encart h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
@@ -200,7 +204,8 @@
         <div id="messages"></div>
         <div id="suggestions"></div>
         <div class="saisie">
-          <input id="saisie" type="text" maxlength="500" placeholder="Écrivez comme un client…" autocomplete="off">
+          <input id="saisie" type="text" maxlength="500" placeholder="Écrivez ou parlez…" autocomplete="off">
+          <button id="btn-micro" class="cache" title="Parler" aria-label="Parler">🎤</button>
           <button class="btn btn-orange" id="btn-envoyer">Envoyer</button>
         </div>
       </div>
@@ -390,6 +395,41 @@
       .then(function () { occupe = false; $("saisie").focus(); });
   }
   $("btn-envoyer").onclick = function () { envoyer(); };
+
+  // ---- micro (Chrome / Edge) ----
+  var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var reco = null, ecoute = false;
+  if (Reco) {
+    $("btn-micro").classList.remove("cache");
+    $("btn-micro").onclick = function () {
+      if (ecoute) { reco.stop(); return; }
+      if (occupe) return;
+      reco = new Reco();
+      reco.lang = "fr-FR";
+      reco.interimResults = true;
+      reco.maxAlternatives = 1;
+      var final = "";
+      reco.onstart = function () { ecoute = true; $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹"; $("saisie").placeholder = "Je vous écoute…"; };
+      reco.onresult = function (e) {
+        var texte = "";
+        for (var i = 0; i < e.results.length; i++) texte += e.results[i][0].transcript;
+        $("saisie").value = texte;
+        if (e.results[e.results.length - 1].isFinal) final = texte;
+      };
+      reco.onerror = function (e) {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") bulle("Le micro est bloqué : autorisez-le dans le navigateur (icône à gauche de l'adresse).", "info");
+        else if (e.error === "no-speech") bulle("Je n'ai rien entendu, réessayez.", "info");
+      };
+      reco.onend = function () {
+        ecoute = false;
+        $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
+        $("saisie").placeholder = "Écrivez ou parlez…";
+        var t = (final || $("saisie").value).trim();
+        if (t) envoyer(t);
+      };
+      try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
+    };
+  }
   $("saisie").addEventListener("keydown", function (e) { if (e.key === "Enter") envoyer(); });
 
   // ---- fiche de demande ----
