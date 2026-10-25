@@ -447,7 +447,7 @@
   }
 
   // ---- fiche de demande ----
-  function joli(n) { return /^0\d{9}$/.test(n) ? n.replace(/(\d{2})(?=\d)/g, "$1 ") : n; }
+  function joli(n) { var m = n.match(/^(\d+)(.*)$/); return m && m[1][0] === "0" ? m[1].replace(/(\d{2})(?=\d)/g, "$1 ") + m[2] : n; }
   function ligne(titre, valeur, classe) {
     var d = document.createElement("div");
     d.className = "ligne" + (classe ? " " + classe : "");
