@@ -18,6 +18,9 @@ def filtrer_donnees_sensibles(texte):
 
 app = Flask(__name__)
 limiter = Limiter(get_remote_address, app=app, default_limits=["20 per minute"])
+from comptable import comptable_bp
+limiter.limit("15 per minute")(comptable_bp)
+app.register_blueprint(comptable_bp)
 client = Anthropic(timeout=30.0)
 GMAIL_USER = "mpsolutionsia@gmail.com"
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")

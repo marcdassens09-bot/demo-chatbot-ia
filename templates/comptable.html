@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Démonstration — MP Solutions IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vert: #1b3a2b; --vert-doux: #eef3f0; --orange: #E8730A; --orange-doux: #fdf1e6;
+    --gris: #6b7a72; --bord: #dfe6e2; --blanc: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: 'Poppins', 'Segoe UI', sans-serif; background: var(--blanc); color: var(--vert); line-height: 1.5; }
+  .cache { display: none !important; }
+  header.bandeau { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; background: var(--vert); border-bottom: 3px solid var(--orange); }
+  header.bandeau img { height: 38px; max-width: 70vw; object-fit: contain; }
+  header.bandeau .tag { font-size: 12px; color: rgba(255,255,255,.8); font-style: italic; text-align: right; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 16px 40px; }
+  h1 { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
+  h1 span, .orange { color: var(--orange); }
+  .intro { color: var(--gris); margin-bottom: 26px; }
+  .prefixe { color: var(--orange); font-weight: 600; margin-right: 6px; }
+
+  /* Ecran code */
+  .carte-code { max-width: 420px; margin: 50px auto; border: 1px solid var(--bord); border-radius: 16px; padding: 34px 28px; text-align: center; }
+  .carte-code h1 { font-size: 22px; }
+  .carte-code p { color: var(--gris); font-size: 14px; margin: 8px 0 22px; }
+  .carte-code input { width: 100%; padding: 13px 16px; font-size: 18px; letter-spacing: 3px; text-align: center; border: 2px solid var(--bord); border-radius: 10px; outline: none; font-family: inherit; color: var(--vert); }
+  .carte-code input:focus { border-color: var(--orange); }
+  .btn { display: inline-block; border: none; border-radius: 10px; padding: 12px 22px; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+  .btn-orange { background: var(--orange); color: #fff; }
+  .btn-orange:hover { background: #c96207; }
+  .btn-ligne { background: #fff; color: var(--vert); border: 1.5px solid var(--vert); }
+  .btn-ligne:hover { background: var(--vert-doux); }
+  .carte-code .btn { width: 100%; margin-top: 14px; }
+  .erreur { color: #b3261e; font-size: 14px; margin-top: 12px; min-height: 20px; }
+
+  /* Choix du metier */
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .metier { border: 1.5px solid var(--bord); border-radius: 14px; padding: 22px 16px; text-align: center; cursor: pointer; background: #fff; font-family: inherit; color: var(--vert); transition: border-color .15s, transform .15s; }
+  .metier:hover { border-color: var(--orange); transform: translateY(-2px); }
+  .metier .emoji { font-size: 34px; display: block; margin-bottom: 8px; }
+  .metier strong { display: block; font-size: 16px; font-weight: 600; }
+  .metier small { color: var(--gris); font-size: 12px; }
+  .note { margin-top: 26px; font-size: 13px; color: var(--gris); background: var(--vert-doux); padding: 12px 16px; border-radius: 10px; }
+
+  /* Chat */
+  .zone { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+  .chat { border: 1px solid var(--bord); border-radius: 16px; display: flex; flex-direction: column; height: min(640px, calc(100vh - 170px)); min-height: 440px; overflow: hidden; }
+  .chat-tete { background: var(--vert); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+  .chat-tete .emoji { font-size: 26px; background: #fff; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .chat-tete strong { display: block; font-size: 16px; font-weight: 600; }
+  .chat-tete small { font-size: 12px; opacity: .85; }
+  .pastille { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #5fd38d; margin-right: 5px; }
+  .fictif { margin-left: auto; font-size: 11px; background: var(--orange); color: #fff; padding: 3px 9px; border-radius: 8px; white-space: nowrap; }
+  #messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .bulle { max-width: 82%; padding: 11px 15px; border-radius: 14px; white-space: pre-wrap; word-wrap: break-word; font-size: 15px; }
+  .bulle.ia { background: var(--vert-doux); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .bulle.client { background: var(--orange); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .bulle.info { align-self: center; background: none; color: var(--gris); font-size: 13px; font-style: italic; }
+  .points { display: inline-flex; gap: 4px; }
+  .points i { width: 7px; height: 7px; background: var(--vert); border-radius: 50%; opacity: .4; animation: saut 1s infinite; }
+  .points i:nth-child(2) { animation-delay: .15s; } .points i:nth-child(3) { animation-delay: .3s; }
+  @keyframes saut { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+  #suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--bord); }
+  #suggestions button { font-family: inherit; font-size: 13px; background: #fff; border: 1px solid var(--orange); color: var(--vert); padding: 6px 12px; border-radius: 18px; cursor: pointer; }
+  #suggestions button:hover { background: var(--orange-doux); }
+  .saisie { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--bord); }
+  .saisie input { flex: 1; padding: 12px 14px; border: 1.5px solid var(--bord); border-radius: 10px; font-family: inherit; font-size: 15px; color: var(--vert); outline: none; min-width: 0; }
+  .saisie input:focus { border-color: var(--orange); }
+
+  .cote { display: flex; flex-direction: column; gap: 14px; }
+  .encart { border: 1px solid var(--bord); border-radius: 14px; padding: 18px; }
+  .encart h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .encart p, .encart li { font-size: 13px; color: var(--gris); }
+  .encart ul { padding-left: 18px; }
+  .encart .btn { width: 100%; margin-top: 12px; font-size: 14px; }
+
+  /* Fiche de demande */
+  .voile { position: fixed; inset: 0; background: rgba(27,58,43,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .fiche { background: #fff; border-radius: 16px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+  .fiche-tete { border-bottom: 3px solid var(--orange); padding: 18px 22px; }
+  .fiche-tete small { color: var(--gris); font-size: 12px; }
+  .fiche-tete h2 { font-size: 19px; font-weight: 600; }
+  .fiche-corps { padding: 18px 22px; }
+  .ligne { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--bord); font-size: 14px; }
+  .ligne b { font-weight: 500; color: var(--gris); }
+  .ligne.urgent span { color: #b3261e; font-weight: 600; }
+  .protege { margin-top: 16px; background: var(--vert-doux); border-left: 4px solid var(--vert); padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+  .fiche-pied { padding: 0 22px 20px; text-align: right; }
+
+  footer { text-align: center; font-size: 12px; color: var(--gris); padding: 18px 16px 26px; border-top: 1px solid var(--bord); }
+
+  @media (max-width: 760px) {
+    .zone { grid-template-columns: 1fr; }
+    header.bandeau .tag { display: none; }
+    h1 { font-size: 22px; }
+    .chat { height: calc(100vh - 150px); }
+    #suggestions { flex-wrap: nowrap; overflow-x: auto; }
+    #suggestions button { white-space: nowrap; flex-shrink: 0; }
+    .chat-tete small { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="bandeau">
+  <img src="/comptable/logo.png" alt="MP Solutions IA">
+</header>
+
+<main>
+  <!-- 1. Code d'acces -->
+  <section id="ecran-code">
+    <div class="carte-code">
+      <h1>Démonstration <span>réservée</span></h1>
+      <p>Entrez le code d'accès qui vous a été donné.</p>
+      <input id="code" type="password" autocomplete="off" placeholder="••••••" aria-label="Code d'accès">
+      <button class="btn btn-orange" id="btn-code">Entrer</button>
+      <div class="erreur" id="erreur-code"></div>
+    </div>
+  </section>
+
+  <!-- 2. Choix du metier -->
+  <section id="ecran-metiers" class="cache">
+    <h1><span class="prefixe">&gt;&gt;</span>Choisissez un <span>métier</span></h1>
+    <p class="intro">Vous jouez le client. L'assistant répond au nom de l'artisan, à toute heure, puis prépare la demande pour lui.</p>
+    <div class="grille" id="grille"></div>
+    <div class="note">Toutes ces entreprises sont <strong>fictives</strong>, créées pour cette démonstration. Chez un vrai client, l'assistant est construit à partir de ses propres horaires, services et tarifs.</div>
+  </section>
+
+  <!-- 3. Conversation -->
+  <section id="ecran-chat" class="cache">
+    <div class="zone">
+      <div class="chat">
+        <div class="chat-tete">
+          <div class="emoji" id="chat-emoji"></div>
+          <div>
+            <strong id="chat-nom"></strong>
+            <small><span class="pastille"></span>Assistant IA — répond 24 h/24</small>
+          </div>
+          <span class="fictif">Entreprise fictive</span>
+        </div>
+        <div id="messages"></div>
+        <div id="suggestions"></div>
+        <div class="saisie">
+          <input id="saisie" type="text" maxlength="500" placeholder="Écrivez comme un client…" autocomplete="off">
+          <button class="btn btn-orange" id="btn-envoyer">Envoyer</button>
+        </div>
+      </div>
+
+      <div class="cote">
+        <div class="encart">
+          <h3><span class="prefixe">++</span>Ce que reçoit l'artisan</h3>
+          <p>Après quelques échanges, voyez la fiche que l'artisan recevrait : le besoin, l'urgence, la commune, le créneau.</p>
+          <button class="btn btn-orange" id="btn-fiche">Voir la fiche de demande</button>
+        </div>
+        <div class="encart">
+          <h3><span class="prefixe">-&gt;</span>Essayez par exemple</h3>
+          <ul>
+            <li>de donner un faux numéro de téléphone</li>
+            <li>de demander un prix qui n'existe pas</li>
+            <li>d'écrire en anglais ou en espagnol</li>
+            <li>de lui faire dire autre chose que son métier</li>
+          </ul>
+        </div>
+        <button class="btn btn-ligne" id="btn-retour">← Changer de métier</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Fiche de demande -->
+<div class="voile cache" id="voile">
+  <div class="fiche">
+    <div class="fiche-tete">
+      <small id="fiche-entreprise"></small>
+      <h2>Nouvelle demande client</h2>
+    </div>
+    <div class="fiche-corps" id="fiche-corps"></div>
+    <div class="fiche-pied"><button class="btn btn-ligne" id="btn-fermer">Fermer</button></div>
+  </div>
+</div>
+
+<footer>MP Solutions IA — Marc-Paul Dassens — contact@mpsolutionsia.fr — Artigat (09130)</footer>
+
+<script>
+  var METIERS = {{ metiers|tojson }};
+  var code = "";
+  var metier = null;
+  var historique = [];   // conversation envoyee au serveur (numeros masques)
+  var bruts = [];        // messages tels que tapes, pour reperer les coordonnees
+  var occupe = false;
+
+  function $(id) { return document.getElementById(id); }
+  function montrer(id) {
+    ["ecran-code", "ecran-metiers", "ecran-chat"].forEach(function (e) { $(e).classList.toggle("cache", e !== id); });
+  }
+
+  function appel(url, corps) {
+    corps.code = code;
+    return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) { d._statut = r.status; return d; });
+      });
+  }
+
+  // ---- 1. code ----
+  function verifierCode() {
+    var saisi = $("code").value.trim();
+    if (!saisi) return;
+    $("erreur-code").textContent = "Vérification…";
+    fetch("/comptable/verifier", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: saisi }) })
+      .then(function (r) { return r.json().then(function (d) { d._statut = r.status; return d; }); })
+      .then(function (d) {
+        if (d.ok) { code = saisi; $("erreur-code").textContent = ""; montrer("ecran-metiers"); }
+        else if (d._statut === 429) { $("erreur-code").textContent = "Trop d'essais. Attendez une minute."; }
+        else { $("erreur-code").textContent = "Code incorrect."; }
+      })
+      .catch(function () { $("erreur-code").textContent = "Le service se réveille, réessayez dans 30 secondes."; });
+  }
+  $("btn-code").onclick = verifierCode;
+  $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") verifierCode(); });
+
+  // ---- 2. metiers ----
+  METIERS.forEach(function (m) {
+    var b = document.createElement("button");
+    b.className = "metier";
+    b.innerHTML = '<span class="emoji"></span><strong></strong><small></small>';
+    b.querySelector(".emoji").textContent = m.emoji;
+    b.querySelector("strong").textContent = m.metier;
+    b.querySelector("small").textContent = m.nom;
+    b.onclick = function () { ouvrir(m); };
+    $("grille").appendChild(b);
+  });
+
+  function ouvrir(m) {
+    metier = m; historique = []; bruts = [];
+    $("chat-emoji").textContent = m.emoji;
+    $("chat-nom").textContent = m.nom;
+    $("messages").innerHTML = "";
+    bulle("Bonjour ! Je suis l'assistant virtuel de " + m.nom + ". Comment puis-je vous aider ?", "ia");
+    var s = $("suggestions"); s.innerHTML = "";
+    m.suggestions.forEach(function (t) {
+      var b = document.createElement("button"); b.textContent = t;
+      b.onclick = function () { envoyer(t); };
+      s.appendChild(b);
+    });
+    montrer("ecran-chat");
+    $("saisie").focus();
+  }
+  $("btn-retour").onclick = function () { montrer("ecran-metiers"); };
+
+  // ---- 3. conversation ----
+  function bulle(texte, qui) {
+    var d = document.createElement("div");
+    d.className = "bulle " + qui;
+    d.textContent = texte;
+    $("messages").appendChild(d);
+    $("messages").scrollTop = $("messages").scrollHeight;
+    return d;
+  }
+
+  function envoyer(texte) {
+    texte = (texte || $("saisie").value).trim();
+    if (!texte || occupe) return;
+    occupe = true;
+    $("saisie").value = "";
+    bulle(texte, "client");
+    var attente = bulle("", "ia");
+    attente.innerHTML = '<span class="points"><i></i><i></i><i></i></span>';
+    appel("/comptable/chat", { metier: metier.id, message: texte, historique: historique })
+      .then(function (d) {
+        attente.remove();
+        if (d.reponse) {
+          historique = d.historique; bruts.push(texte);
+          bulle(d.reponse, "ia");
+        } else if (d._statut === 403) {
+          bulle("Le code d'accès n'est plus valable. Rechargez la page.", "info");
+        } else if (d._statut === 429) {
+          bulle("Doucement ! Trop de messages en une minute, attendez un peu.", "info");
+        } else {
+          bulle(d.erreur || "Petit souci technique, réessayez.", "info");
+        }
+      })
+      .catch(function () { attente.remove(); bulle("Connexion perdue, réessayez.", "info"); })
+      .then(function () { occupe = false; $("saisie").focus(); });
+  }
+  $("btn-envoyer").onclick = function () { envoyer(); };
+  $("saisie").addEventListener("keydown", function (e) { if (e.key === "Enter") envoyer(); });
+
+  // ---- fiche de demande ----
+  function joli(n) { return /^0\d{9}$/.test(n) ? n.replace(/(\d{2})(?=\d)/g, "$1 ") : n; }
+  function ligne(titre, valeur, classe) {
+    var d = document.createElement("div");
+    d.className = "ligne" + (classe ? " " + classe : "");
+    var b = document.createElement("b"); b.textContent = titre;
+    var s = document.createElement("span"); s.textContent = valeur || "non précisé";
+    d.appendChild(b); d.appendChild(s);
+    return d;
+  }
+
+  $("btn-fiche").onclick = function () {
+    if (!historique.length) { bulle("Écrivez d'abord quelques messages à l'assistant.", "info"); return; }
+    var bouton = $("btn-fiche");
+    bouton.disabled = true; bouton.textContent = "Préparation de la fiche…";
+    appel("/comptable/fiche", { metier: metier.id, historique: historique, bruts: bruts })
+      .then(function (d) {
+        if (!d.fiche) { bulle(d.erreur || "Fiche impossible pour l'instant, réessayez.", "info"); return; }
+        var f = d.fiche, c = d.contacts, corps = $("fiche-corps");
+        corps.innerHTML = "";
+        $("fiche-entreprise").textContent = d.entreprise;
+        var urgent = /^oui/i.test(f.urgence || "");
+        corps.appendChild(ligne("Prénom", f.prenom));
+        corps.appendChild(ligne("Commune", f.commune));
+        corps.appendChild(ligne("Besoin", f.besoin));
+        corps.appendChild(ligne("Urgence", f.urgence, urgent ? "urgent" : ""));
+        corps.appendChild(ligne("Créneau souhaité", f.creneau_souhaite));
+        corps.appendChild(ligne("Téléphone", c.telephones.map(joli).join(", ") || "non donné"));
+        corps.appendChild(ligne("Email", c.emails.join(", ") || "non donné"));
+        corps.appendChild(ligne("À faire", f.a_faire));
+        var p = document.createElement("div");
+        p.className = "protege";
+        p.textContent = "Données protégées : le téléphone et l'email sont repérés par le serveur et masqués avant l'envoi à l'IA. L'assistant ne les a jamais vus ; ils sont transmis directement à l'artisan.";
+        corps.appendChild(p);
+        $("voile").classList.remove("cache");
+      })
+      .catch(function () { bulle("Connexion perdue, réessayez.", "info"); })
+      .then(function () { bouton.disabled = false; bouton.textContent = "Voir la fiche de demande"; });
+  };
+  $("btn-fermer").onclick = function () { $("voile").classList.add("cache"); };
+  $("voile").onclick = function (e) { if (e.target === $("voile")) $("voile").classList.add("cache"); };
+</script>
+</body>
+</html>
