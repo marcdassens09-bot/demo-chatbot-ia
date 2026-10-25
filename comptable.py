@@ -32,6 +32,15 @@ def code_valide(code):
 # ---------- Donnees personnelles ----------
 
 RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# dictee : "marcdassens 09@gmail.com" -> le mot avant un petit morceau de chiffres fait partie de l'adresse
+RE_EMAIL_DICTE = re.compile(r"[A-Za-z0-9._-]+ \d{1,4}@[\w-]+(?:\.[\w-]+)+")
+
+
+def emails_dans(texte):
+    trouves = [e.replace(" ", "") for e in RE_EMAIL_DICTE.findall(texte)]
+    for e in RE_EMAIL.findall(RE_EMAIL_DICTE.sub(" ", texte)):
+        trouves.append(e)
+    return trouves
 RE_TEL = re.compile(r"(?<!\d)(?:\+33\s?|0)[1-9](?:[\s.\-]?\d{2}){4}(?!\d)")
 # numero commence mais incomplet (6 a 9 chiffres) : souvent une dictee coupee
 RE_TEL_PARTIEL = re.compile(r"(?<!\d)(?:\+33\s?|0)[1-9](?:[\s.\-]?\d){4,7}(?![\d])")
@@ -39,6 +48,7 @@ RE_CARTE = re.compile(r"\b(?:\d[ -]?){13,19}\b")
 
 
 def masquer(texte):
+    texte = RE_EMAIL_DICTE.sub("[EMAIL MASQUÉ]", texte)
     texte = RE_EMAIL.sub("[EMAIL MASQUÉ]", texte)
     texte = RE_CARTE.sub("[CARTE MASQUÉE]", texte)
     texte = RE_TEL.sub("[TÉLÉPHONE MASQUÉ]", texte)
@@ -49,7 +59,7 @@ def masquer(texte):
 def extraire_contacts(textes):
     emails, tels = [], []
     for t in textes:
-        for e in RE_EMAIL.findall(t):
+        for e in emails_dans(t):
             if e not in emails:
                 emails.append(e)
         sans_carte = RE_CARTE.sub(" ", t)
@@ -61,6 +71,8 @@ def extraire_contacts(textes):
             n = re.sub(r"[\s.\-]", "", n) + " (incomplet)"
             if n not in tels:
                 tels.append(n)
+    # retire une adresse qui n'est que la fin d'une autre (ex. 09@gmail.com dans marcdassens09@gmail.com)
+    emails = [e for e in emails if not any(a != e and a.endswith(e) for a in emails)]
     return {"telephones": tels[:3], "emails": emails[:3]}
 
 
