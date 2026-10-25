@@ -399,12 +399,12 @@
   // ---- micro (Chrome / Edge) ----
   // Micro ouvert tant qu'on parle : coupe apres 3 s de silence ou au clic sur stop.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var reco = null, ecoute = false, minuteur = null, dicte = "";
-  var SILENCE_MS = 3000, MAX_MS = 60000, demarrage = 0;
+  var reco = null, ecoute = false, minuteur = null, dicte = "", enCours = "";
+  var SILENCE_MS = 3000, ATTENTE_DEBUT_MS = 8000, MAX_MS = 60000, demarrage = 0;
 
-  function relancerMinuteur() {
+  function relancerMinuteur(delai) {
     clearTimeout(minuteur);
-    minuteur = setTimeout(function () { if (reco) reco.stop(); }, SILENCE_MS);
+    minuteur = setTimeout(function () { if (reco) reco.stop(); }, delai || SILENCE_MS);
   }
 
   if (Reco) {
@@ -415,17 +415,19 @@
       reco = new Reco();
       reco.lang = "fr-FR";
       reco.continuous = true;       // ne coupe pas a la premiere pause (numeros de telephone)
-      reco.interimResults = false;  // phrase par phrase, sans le decalage du mot a mot
-      dicte = "";
+      reco.interimResults = true;   // sert seulement a savoir qu'on parle encore (minuteur) ; on n'affiche que les phrases finies
+      dicte = ""; enCours = "";
       reco.onstart = function () {
         ecoute = true; demarrage = Date.now();
         $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹";
         $("saisie").value = ""; $("saisie").placeholder = "Je vous écoute… (cliquez ⏹ pour finir)";
-        relancerMinuteur();
+        relancerMinuteur(ATTENTE_DEBUT_MS);
       };
       reco.onresult = function (e) {
+        enCours = "";
         for (var i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) dicte = (dicte + " " + e.results[i][0].transcript).trim();
+          else enCours += e.results[i][0].transcript;
         }
         $("saisie").value = dicte;
         if (Date.now() - demarrage > MAX_MS) reco.stop(); else relancerMinuteur();
@@ -439,7 +441,7 @@
         ecoute = false;
         $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
         $("saisie").placeholder = "Écrivez ou parlez…";
-        var t = dicte.trim(); dicte = "";
+        var t = (dicte + " " + enCours).trim(); dicte = ""; enCours = "";
         if (t) envoyer(t);
       };
       try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
