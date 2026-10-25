@@ -348,7 +348,7 @@
   };
 
   $("btn-lancer").onclick = function () {
-    var f = { nom: $("v-nom").value.trim(), metier: $("v-metier").value.trim(), infos: $("v-infos").value.trim() };
+    var f = { nom: $("v-nom").value.trim(), metier: $("v-metier").value.trim(), infos: $("v-infos").value.trim(), site: analyse ? analyse.site : "" };
     if (!f.nom || f.infos.length < 20) { $("attente-verif").textContent = "Il faut un nom et des informations."; return; }
     var sugg = (analyse && analyse.suggestions.length) ? analyse.suggestions : ["Quels sont vos horaires ?", "Vous intervenez où ?", "Je voudrais un devis", "Comment vous contacter ?"];
     ouvrir({ id: "perso", emoji: "🏢", nom: f.nom, suggestions: sugg, fiche: f });

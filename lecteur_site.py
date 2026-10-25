@@ -221,7 +221,19 @@ def lire_site(url):
     url = normaliser(url)
     url, html = telecharger(url)
     titre, texte, liens = extraire(html)
-    blocs = [f"=== PAGE : {url} ===\n{texte[:MAX_TEXTE_PAGE]}"]
+    deja_vues = set()
+
+    def nouvelles_lignes(t):
+        # enleve menu, pied de page... deja lus sur une page precedente
+        garde = []
+        for ligne in t.splitlines():
+            if len(ligne) > 25 and ligne in deja_vues:
+                continue
+            deja_vues.add(ligne)
+            garde.append(ligne)
+        return "\n".join(garde)
+
+    blocs = [f"=== PAGE : {url} ===\n{nouvelles_lignes(texte)[:MAX_TEXTE_PAGE]}"]
     lues = [url]
     for autre in pages_utiles(url, liens):
         try:
@@ -229,6 +241,7 @@ def lire_site(url):
         except SiteIllisible:
             continue
         _, t, _ = extraire(h)
+        t = nouvelles_lignes(t)
         if t:
             blocs.append(f"=== PAGE : {u} ===\n{t[:MAX_TEXTE_PAGE]}")
             lues.append(u)
