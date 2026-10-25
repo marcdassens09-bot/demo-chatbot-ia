@@ -93,6 +93,19 @@
   .protege { margin-top: 16px; background: var(--vert-doux); border-left: 4px solid var(--vert); padding: 12px 14px; border-radius: 8px; font-size: 13px; }
   .fiche-pied { padding: 0 22px 20px; text-align: right; }
 
+  .metier.perso { border: 2px dashed var(--orange); background: var(--orange-doux); }
+  .formulaire { max-width: 620px; }
+  .formulaire label { display: block; font-size: 14px; font-weight: 500; margin: 14px 0 6px; }
+  .formulaire label small { color: var(--gris); font-weight: 400; }
+  .formulaire input, .formulaire textarea { width: 100%; padding: 12px 14px; border: 1.5px solid var(--bord); border-radius: 10px; font-family: inherit; font-size: 15px; color: var(--vert); outline: none; }
+  .formulaire input:focus, .formulaire textarea:focus { border-color: var(--orange); }
+  .formulaire textarea { min-height: 300px; resize: vertical; line-height: 1.5; font-size: 14px; }
+  .boutons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .attente { margin-top: 14px; color: var(--gris); font-size: 14px; min-height: 20px; }
+  .attente.erreur { color: #b3261e; }
+  .manque { margin-top: 14px; background: var(--orange-doux); border-left: 4px solid var(--orange); padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+  .manque ul { padding-left: 18px; margin-top: 4px; }
+  .pages-lues { margin-top: 10px; font-size: 12px; color: var(--gris); word-break: break-all; }
   footer { text-align: center; font-size: 12px; color: var(--gris); padding: 18px 16px 26px; border-top: 1px solid var(--bord); }
 
   @media (max-width: 760px) {
@@ -129,7 +142,47 @@
     <h1><span class="prefixe">&gt;&gt;</span>Choisissez un <span>métier</span></h1>
     <p class="intro">Vous jouez le client. L'assistant répond au nom de l'artisan, à toute heure, puis prépare la demande pour lui.</p>
     <div class="grille" id="grille"></div>
-    <div class="note">Toutes ces entreprises sont <strong>fictives</strong>, créées pour cette démonstration. Chez un vrai client, l'assistant est construit à partir de ses propres horaires, services et tarifs.</div>
+    <div class="note">La première carte construit l'assistant d'une vraie entreprise à partir de son site internet. Les autres entreprises sont <strong>fictives</strong>, créées pour cette démonstration.</div>
+  </section>
+
+  <!-- 2b. Votre client : formulaire -->
+  <section id="ecran-client" class="cache">
+    <h1><span class="prefixe">&gt;&gt;</span>L'assistant de <span>votre client</span></h1>
+    <p class="intro">Indiquez une entreprise qui a un site internet. L'assistant lit le site, puis vous montre ce qu'il a compris avant de répondre.</p>
+    <div class="formulaire">
+      <label for="c-nom">Nom de l'entreprise</label>
+      <input id="c-nom" maxlength="100" placeholder="Ex : Plomberie Dupont">
+      <label for="c-commune">Commune <small>(facultatif)</small></label>
+      <input id="c-commune" maxlength="80" placeholder="Ex : Pamiers">
+      <label for="c-site">Site internet</label>
+      <input id="c-site" maxlength="300" placeholder="Ex : www.plomberie-dupont.fr">
+      <div class="boutons">
+        <button class="btn btn-orange" id="btn-analyser">Lire le site</button>
+        <button class="btn btn-ligne" id="btn-annuler-client">← Retour</button>
+      </div>
+      <div class="attente" id="attente-client"></div>
+    </div>
+  </section>
+
+  <!-- 2c. Votre client : fiche a verifier -->
+  <section id="ecran-verif" class="cache">
+    <h1><span class="prefixe">++</span>Ce que l'assistant a <span>compris</span></h1>
+    <p class="intro">Vérifiez et corrigez si besoin : l'assistant répondra uniquement avec ces informations.</p>
+    <div class="formulaire">
+      <label for="v-nom">Entreprise</label>
+      <input id="v-nom" maxlength="100">
+      <label for="v-metier">Métier</label>
+      <input id="v-metier" maxlength="80">
+      <label for="v-infos">Informations trouvées sur le site</label>
+      <textarea id="v-infos" maxlength="6000"></textarea>
+      <div class="manque cache" id="v-manque"><strong>Absent du site :</strong><ul id="v-manque-liste"></ul></div>
+      <div class="pages-lues" id="v-pages"></div>
+      <div class="boutons">
+        <button class="btn btn-orange" id="btn-lancer">Lancer l'assistant</button>
+        <button class="btn btn-ligne" id="btn-annuler-verif">← Autre entreprise</button>
+      </div>
+      <div class="attente erreur" id="attente-verif"></div>
+    </div>
   </section>
 
   <!-- 3. Conversation -->
@@ -142,7 +195,7 @@
             <strong id="chat-nom"></strong>
             <small><span class="pastille"></span>Assistant IA — répond 24 h/24</small>
           </div>
-          <span class="fictif">Entreprise fictive</span>
+          <span class="fictif" id="chat-badge">Entreprise fictive</span>
         </div>
         <div id="messages"></div>
         <div id="suggestions"></div>
@@ -197,7 +250,7 @@
 
   function $(id) { return document.getElementById(id); }
   function montrer(id) {
-    ["ecran-code", "ecran-metiers", "ecran-chat"].forEach(function (e) { $(e).classList.toggle("cache", e !== id); });
+    ["ecran-code", "ecran-metiers", "ecran-client", "ecran-verif", "ecran-chat"].forEach(function (e) { $(e).classList.toggle("cache", e !== id); });
   }
 
   function appel(url, corps) {
@@ -226,6 +279,12 @@
   $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") verifierCode(); });
 
   // ---- 2. metiers ----
+  var carte = document.createElement("button");
+  carte.className = "metier perso";
+  carte.innerHTML = '<span class="emoji">🏢</span><strong>Votre client</strong><small>à partir de son site internet</small>';
+  carte.onclick = function () { montrer("ecran-client"); $("c-nom").focus(); };
+  $("grille").appendChild(carte);
+
   METIERS.forEach(function (m) {
     var b = document.createElement("button");
     b.className = "metier";
@@ -241,6 +300,7 @@
     metier = m; historique = []; bruts = [];
     $("chat-emoji").textContent = m.emoji;
     $("chat-nom").textContent = m.nom;
+    $("chat-badge").textContent = m.id === "perso" ? "Aperçu non officiel" : "Entreprise fictive";
     $("messages").innerHTML = "";
     bulle("Bonjour ! Je suis l'assistant virtuel de " + m.nom + ". Comment puis-je vous aider ?", "ia");
     var s = $("suggestions"); s.innerHTML = "";
@@ -252,7 +312,47 @@
     montrer("ecran-chat");
     $("saisie").focus();
   }
-  $("btn-retour").onclick = function () { montrer("ecran-metiers"); };
+  $("btn-retour").onclick = function () { montrer(metier && metier.id === "perso" ? "ecran-verif" : "ecran-metiers"); };
+  $("btn-retour").textContent = "← Retour";
+
+  // ---- 2b. votre client ----
+  var analyse = null;
+  $("btn-annuler-client").onclick = function () { montrer("ecran-metiers"); };
+  $("btn-annuler-verif").onclick = function () { montrer("ecran-client"); };
+
+  $("btn-analyser").onclick = function () {
+    var nom = $("c-nom").value.trim(), site = $("c-site").value.trim();
+    var zone = $("attente-client");
+    zone.classList.remove("erreur");
+    if (!nom || !site) { zone.classList.add("erreur"); zone.textContent = "Le nom et le site sont nécessaires."; return; }
+    var bouton = this; bouton.disabled = true;
+    zone.textContent = "Lecture du site en cours… (15 à 30 secondes)";
+    appel("/comptable/analyser", { nom: nom, commune: $("c-commune").value.trim(), site: site })
+      .then(function (d) {
+        if (!d.infos) {
+          zone.classList.add("erreur");
+          zone.textContent = d._statut === 429 ? "Trop de demandes, attendez une minute." : (d.erreur || "Lecture impossible, réessayez.");
+          return;
+        }
+        analyse = d; zone.textContent = "";
+        $("v-nom").value = d.nom; $("v-metier").value = d.metier; $("v-infos").value = d.infos;
+        var l = $("v-manque-liste"); l.innerHTML = "";
+        d.manquant.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; l.appendChild(li); });
+        $("v-manque").classList.toggle("cache", !d.manquant.length);
+        $("v-pages").textContent = "Pages lues : " + d.pages.join(" · ");
+        $("attente-verif").textContent = "";
+        montrer("ecran-verif");
+      })
+      .catch(function () { zone.classList.add("erreur"); zone.textContent = "Connexion perdue, réessayez."; })
+      .then(function () { bouton.disabled = false; });
+  };
+
+  $("btn-lancer").onclick = function () {
+    var f = { nom: $("v-nom").value.trim(), metier: $("v-metier").value.trim(), infos: $("v-infos").value.trim() };
+    if (!f.nom || f.infos.length < 20) { $("attente-verif").textContent = "Il faut un nom et des informations."; return; }
+    var sugg = (analyse && analyse.suggestions.length) ? analyse.suggestions : ["Quels sont vos horaires ?", "Vous intervenez où ?", "Je voudrais un devis", "Comment vous contacter ?"];
+    ouvrir({ id: "perso", emoji: "🏢", nom: f.nom, suggestions: sugg, fiche: f });
+  };
 
   // ---- 3. conversation ----
   function bulle(texte, qui) {
@@ -272,7 +372,7 @@
     bulle(texte, "client");
     var attente = bulle("", "ia");
     attente.innerHTML = '<span class="points"><i></i><i></i><i></i></span>';
-    appel("/comptable/chat", { metier: metier.id, message: texte, historique: historique })
+    appel("/comptable/chat", { metier: metier.id, fiche_perso: metier.fiche, message: texte, historique: historique })
       .then(function (d) {
         attente.remove();
         if (d.reponse) {
@@ -307,7 +407,7 @@
     if (!historique.length) { bulle("Écrivez d'abord quelques messages à l'assistant.", "info"); return; }
     var bouton = $("btn-fiche");
     bouton.disabled = true; bouton.textContent = "Préparation de la fiche…";
-    appel("/comptable/fiche", { metier: metier.id, historique: historique, bruts: bruts })
+    appel("/comptable/fiche", { metier: metier.id, fiche_perso: metier.fiche, historique: historique, bruts: bruts })
       .then(function (d) {
         if (!d.fiche) { bulle(d.erreur || "Fiche impossible pour l'instant, réessayez.", "info"); return; }
         var f = d.fiche, c = d.contacts, corps = $("fiche-corps");
