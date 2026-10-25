@@ -406,15 +406,14 @@
       if (occupe) return;
       reco = new Reco();
       reco.lang = "fr-FR";
-      reco.interimResults = true;
-      reco.maxAlternatives = 1;
+      reco.continuous = false;
+      reco.interimResults = false;  // meme reglage que le site Trattoria : phrase entiere, envoi direct
       var final = "";
-      reco.onstart = function () { ecoute = true; $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹"; $("saisie").placeholder = "Je vous écoute…"; };
+      reco.onstart = function () { ecoute = true; $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹"; $("saisie").value = ""; $("saisie").placeholder = "Je vous écoute…"; };
       reco.onresult = function (e) {
         var texte = "";
-        for (var i = 0; i < e.results.length; i++) texte += e.results[i][0].transcript;
-        $("saisie").value = texte;
-        if (e.results[e.results.length - 1].isFinal) final = texte;
+        for (var i = e.resultIndex; i < e.results.length; i++) texte += e.results[i][0].transcript;
+        if (texte.trim()) final = texte.trim();
       };
       reco.onerror = function (e) {
         if (e.error === "not-allowed" || e.error === "service-not-allowed") bulle("Le micro est bloqué : autorisez-le dans le navigateur (icône à gauche de l'adresse).", "info");
@@ -424,8 +423,7 @@
         ecoute = false;
         $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
         $("saisie").placeholder = "Écrivez ou parlez…";
-        var t = (final || $("saisie").value).trim();
-        if (t) envoyer(t);
+        if (final) { var t = final; final = ""; envoyer(t); }
       };
       try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
     };
