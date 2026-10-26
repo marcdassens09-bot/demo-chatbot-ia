@@ -5,6 +5,8 @@ import hmac
 import json
 import os
 import re
+import threading
+from datetime import date
 
 from anthropic import Anthropic
 from flask import Blueprint, jsonify, render_template, request, send_from_directory
@@ -27,6 +29,59 @@ def code_valide(code):
     if not attendu or not isinstance(code, str):
         return False  # pas de code configure = tout est ferme
     return hmac.compare_digest(code.strip().encode(), attendu.encode())
+
+
+# ---------- Demo publique (/demo) : ouverte a tous, sans code ----------
+# Seulement les entreprises fictives (pas de lecture de site), avec des limites
+# par visiteur et par jour pour proteger la facture de l'IA.
+# Couper la demo publique : variable Render DEMO_PUBLIQUE = non.
+
+def demo_publique_ouverte():
+    return os.environ.get("DEMO_PUBLIQUE", "oui").strip().lower() != "non"
+
+
+def _entier_env(nom, defaut):
+    try:
+        return max(0, int(os.environ.get(nom, defaut)))
+    except ValueError:
+        return defaut
+
+
+QUOTA_MESSAGES = _entier_env("DEMO_PUBLIC_MESSAGES", 20)   # messages par visiteur et par jour
+QUOTA_FICHES = _entier_env("DEMO_PUBLIC_FICHES", 5)        # fiches par visiteur et par jour
+QUOTA_GLOBAL = _entier_env("DEMO_PUBLIC_MAX_JOUR", 300)    # appels a l'IA par jour, tous visiteurs
+
+_compteurs = {"jour": None, "visiteurs": {}, "total": 0}
+_verrou = threading.Lock()
+
+
+def ip_visiteur():
+    # Render passe l'adresse du visiteur dans X-Forwarded-For (la premiere)
+    transmis = request.headers.get("X-Forwarded-For", "")
+    return (transmis.split(",")[0].strip() or request.remote_addr or "inconnu")[:64]
+
+
+def consommer(type_appel):
+    """Compte un appel a l'IA. Renvoie (autorise, messages_restants)."""
+    with _verrou:
+        aujourd_hui = date.today().isoformat()
+        if _compteurs["jour"] != aujourd_hui:
+            _compteurs.update(jour=aujourd_hui, visiteurs={}, total=0)
+        v = _compteurs["visiteurs"].setdefault(ip_visiteur(), {"messages": 0, "fiches": 0})
+        quota = QUOTA_MESSAGES if type_appel == "messages" else QUOTA_FICHES
+        if _compteurs["total"] >= QUOTA_GLOBAL or v[type_appel] >= quota:
+            return False, max(0, QUOTA_MESSAGES - v["messages"])
+        v[type_appel] += 1
+        _compteurs["total"] += 1
+        return True, max(0, QUOTA_MESSAGES - v["messages"])
+
+
+def refus_quota():
+    return jsonify({
+        "erreur": "La démonstration est terminée pour aujourd'hui. Pour aller plus loin, "
+                  "écrivez à contact@mpsolutionsia.fr.",
+        "restants": 0,
+    }), 429
 
 
 # ---------- Donnees personnelles ----------
@@ -164,7 +219,21 @@ def page():
          "suggestions": v["suggestions"]}
         for k, v in METIERS.items()
     ]
-    return render_template("comptable.html", metiers=cartes)
+    return render_template("comptable.html", metiers=cartes, public=False)
+
+
+@comptable_bp.route("/demo")
+def page_publique():
+    if not demo_publique_ouverte():
+        return ("<p style='font-family:sans-serif'>La démonstration est fermée pour le moment. "
+                "Contact : contact@mpsolutionsia.fr</p>"), 503
+    cartes = [
+        {"id": k, "emoji": v["emoji"], "metier": v["metier"], "nom": v["nom"],
+         "suggestions": v["suggestions"]}
+        for k, v in METIERS.items()
+    ]
+    return render_template("comptable.html", metiers=cartes, public=True,
+                           quota=QUOTA_MESSAGES)
 
 
 @comptable_bp.route("/comptable/logo.png")
@@ -180,10 +249,18 @@ def verifier():
     return jsonify({"ok": False, "erreur": "Code incorrect."}), 403
 
 
-def lire_requete():
+def lire_requete(public=False):
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return None, (jsonify({"erreur": "Requête invalide."}), 400)
+    if public:
+        # demo publique : seulement les entreprises fictives, jamais la lecture d'un site
+        if not demo_publique_ouverte():
+            return None, (jsonify({"erreur": "La démonstration est fermée pour le moment."}), 503)
+        fiche = METIERS.get(data.get("metier"))
+        if not fiche:
+            return None, (jsonify({"erreur": "Métier inconnu."}), 400)
+        return (data, fiche), None
     if not code_valide(data.get("code")):
         return None, (jsonify({"erreur": "Code d'accès manquant ou incorrect."}), 403)
     if data.get("metier") == "perso":
@@ -284,7 +361,16 @@ Réponds UNIQUEMENT avec un objet JSON, sans texte autour, en français correct 
 
 @comptable_bp.route("/comptable/chat", methods=["POST"])
 def chat():
-    ok, erreur = lire_requete()
+    return repondre(public=False)
+
+
+@comptable_bp.route("/demo/chat", methods=["POST"])
+def chat_public():
+    return repondre(public=True)
+
+
+def repondre(public):
+    ok, erreur = lire_requete(public)
     if erreur:
         return erreur
     data, fiche = ok
@@ -300,6 +386,12 @@ def chat():
         return jsonify({"erreur": str(e)}), 400
     if historique and historique[-1]["role"] != "assistant":
         return jsonify({"erreur": "Historique invalide."}), 400
+
+    restants = None
+    if public:
+        autorise, restants = consommer("messages")
+        if not autorise:
+            return refus_quota()
 
     historique.append({"role": "user", "content": masquer(message.strip())})
     try:
@@ -317,12 +409,24 @@ def chat():
     if not texte:
         texte = f"Je transmets votre question à {fiche['artisan']}, qui vous répondra directement."
     historique.append({"role": "assistant", "content": texte})
-    return jsonify({"reponse": texte, "historique": historique})
+    reponse = {"reponse": texte, "historique": historique}
+    if public:
+        reponse["restants"] = restants
+    return jsonify(reponse)
 
 
 @comptable_bp.route("/comptable/fiche", methods=["POST"])
 def fiche_demande():
-    ok, erreur = lire_requete()
+    return faire_fiche(public=False)
+
+
+@comptable_bp.route("/demo/fiche", methods=["POST"])
+def fiche_publique():
+    return faire_fiche(public=True)
+
+
+def faire_fiche(public):
+    ok, erreur = lire_requete(public)
     if erreur:
         return erreur
     data, fiche = ok
@@ -338,6 +442,8 @@ def fiche_demande():
         return jsonify({"erreur": str(e)}), 400
     if not historique:
         return jsonify({"erreur": "Discute d'abord avec l'assistant."}), 400
+    if public and not consommer("fiches")[0]:
+        return refus_quota()
 
     # 1. les coordonnees sont reperees ici, dans le serveur : l'IA ne les voit pas
     contacts = extraire_contacts(bruts)

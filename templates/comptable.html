@@ -102,6 +102,9 @@
   .vu-ia b { display: block; font-size: 11px; color: var(--gris); font-weight: 500; margin-bottom: 2px; }
   .masque { background: var(--vert); color: #fff; padding: 1px 6px; border-radius: 5px; font-size: 12px; white-space: nowrap; }
   .btn-transparence { width: 100%; margin-top: 8px; font-size: 14px; }
+  .encart-contact { background: var(--orange-doux); border-color: var(--orange); }
+  .encart-contact .btn { display: block; text-align: center; text-decoration: none; width: 100%; box-sizing: border-box; }
+  .encart-contact .restants { display: block; margin-top: 10px; font-size: 12px; color: var(--gris); text-align: center; }
   .interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
   .interrupteur span.libelle { font-size: 14px; font-weight: 500; }
   .interrupteur small { display: block; font-size: 12px; color: var(--gris); font-weight: 400; }
@@ -164,7 +167,11 @@
     <h1><span class="prefixe">&gt;&gt;</span>Choisissez un <span>métier</span></h1>
     <p class="intro">Vous jouez le client. L'assistant répond au nom de l'artisan, à toute heure, puis prépare la demande pour lui.</p>
     <div class="grille" id="grille"></div>
+    {% if public %}
+    <div class="note">Ces entreprises sont <strong>fictives</strong>, créées pour cette démonstration. Les numéros et emails que vous tapez sont masqués avant l'envoi à l'IA. La démonstration est limitée à {{ quota }} messages par jour.</div>
+    {% else %}
     <div class="note">La première carte construit l'assistant d'une vraie entreprise à partir de son site internet. Les autres entreprises sont <strong>fictives</strong>, créées pour cette démonstration.</div>
+    {% endif %}
   </section>
 
   <!-- 2b. Votre client : formulaire -->
@@ -241,6 +248,14 @@
             <button class="bascule" id="bascule-micro" role="switch" aria-checked="true" aria-label="Activer ou couper le micro"></button>
           </div>
         </div>
+        {% if public %}
+        <div class="encart encart-contact">
+          <h3><span class="prefixe">-&gt;</span>Le même pour votre entreprise ?</h3>
+          <p>Un assistant à votre nom, avec vos vraies informations, sur votre site, au téléphone et dans vos emails.</p>
+          <a class="btn btn-orange" id="btn-contact" href="mailto:contact@mpsolutionsia.fr?subject=Je%20veux%20le%20m%C3%AAme%20pour%20mon%20entreprise&amp;body=Bonjour%2C%0A%0AJ%27ai%20essay%C3%A9%20la%20d%C3%A9monstration.%0AMon%20entreprise%20%3A%20%0AMa%20commune%20%3A%20%0AMon%20t%C3%A9l%C3%A9phone%20%3A%20%0A">Je veux le même</a>
+          <small class="restants" id="restants"></small>
+        </div>
+        {% endif %}
         <button class="btn btn-ligne" id="btn-retour">← Changer de métier</button>
       </div>
     </div>
@@ -263,6 +278,8 @@
 
 <script>
   var METIERS = {{ metiers|tojson }};
+  var PUBLIC = {{ 'true' if public else 'false' }};
+  var BASE = PUBLIC ? "/demo" : "/comptable";
   var code = "";
   var metier = null;
   var historique = [];   // conversation envoyee au serveur (numeros masques)
@@ -300,11 +317,16 @@
   $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") verifierCode(); });
 
   // ---- 2. metiers ----
-  var carte = document.createElement("button");
-  carte.className = "metier perso";
-  carte.innerHTML = '<span class="emoji">🏢</span><strong>Votre client</strong><small>à partir de son site internet</small>';
-  carte.onclick = function () { montrer("ecran-client"); $("c-nom").focus(); };
-  $("grille").appendChild(carte);
+  // demo publique : pas de code, pas de carte "Votre client" (lecture de site reservee aux rendez-vous)
+  if (PUBLIC) {
+    montrer("ecran-metiers");
+  } else {
+    var carte = document.createElement("button");
+    carte.className = "metier perso";
+    carte.innerHTML = '<span class="emoji">🏢</span><strong>Votre client</strong><small>à partir de son site internet</small>';
+    carte.onclick = function () { montrer("ecran-client"); $("c-nom").focus(); };
+    $("grille").appendChild(carte);
+  }
 
   METIERS.forEach(function (m) {
     var b = document.createElement("button");
@@ -393,12 +415,18 @@
     bulle(texte, "client");
     var attente = bulle("", "ia");
     attente.innerHTML = '<span class="points"><i></i><i></i><i></i></span>';
-    appel("/comptable/chat", { metier: metier.id, fiche_perso: metier.fiche, message: texte, historique: historique })
+    appel(BASE + "/chat", { metier: metier.id, fiche_perso: metier.fiche, message: texte, historique: historique })
       .then(function (d) {
         attente.remove();
         if (d.reponse) {
           historique = d.historique; bruts.push(texte);
           bulle(d.reponse, "ia");
+          if (PUBLIC && typeof d.restants === "number") {
+            $("restants").textContent = d.restants + " message" + (d.restants > 1 ? "s" : "") + " restant" + (d.restants > 1 ? "s" : "") + " aujourd'hui";
+          }
+        } else if (PUBLIC && d._statut === 429 && d.restants === 0) {
+          bulle(d.erreur, "info");
+          $("restants").textContent = "Démonstration terminée pour aujourd'hui";
         } else if (d._statut === 403) {
           bulle("Le code d'accès n'est plus valable. Rechargez la page.", "info");
         } else if (d._statut === 429) {
@@ -504,7 +532,7 @@
     if (!historique.length) { bulle("Écrivez d'abord quelques messages à l'assistant.", "info"); return; }
     var bouton = $("btn-fiche");
     bouton.disabled = true; bouton.textContent = "Préparation de la fiche…";
-    appel("/comptable/fiche", { metier: metier.id, fiche_perso: metier.fiche, historique: historique, bruts: bruts })
+    appel(BASE + "/fiche", { metier: metier.id, fiche_perso: metier.fiche, historique: historique, bruts: bruts })
       .then(function (d) {
         if (!d.fiche) { bulle(d.erreur || "Fiche impossible pour l'instant, réessayez.", "info"); return; }
         var f = d.fiche, c = d.contacts, corps = $("fiche-corps");
