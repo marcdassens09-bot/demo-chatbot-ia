@@ -82,17 +82,31 @@ Paiement : espèces, carte bancaire.
         "nom": "Restaurant Le Platane",
         "artisan": "l'équipe du Platane",
         "infos": """
-Restaurant fictif de démonstration, à Pamiers (Ariège). Cuisine maison, produits locaux.
-Horaires : du mardi au samedi, midi 12h-14h et soir 19h-21h30. Dimanche midi uniquement. Fermé le lundi.
-Menu du jour en semaine à midi : entrée, plat, dessert 16,50 euros.
-Carte le soir et le week-end. Plats végétariens tous les jours.
-Groupes : jusqu'à 30 personnes, menu groupe sur demande.
-Terrasse ombragée de mai à septembre.
+Restaurant fictif de démonstration, à Pamiers (Ariège). Tenu par un couple : Antoine en cuisine, Lucie en salle.
+Cuisine maison du marché : tout est fait sur place, desserts compris. Viandes d'éleveurs ariégeois, fromages de pays, légumes de maraîchers voisins, selon la saison.
+Horaires : du mardi au samedi, midi 12h-14h et soir 19h-21h30. Dimanche midi uniquement (12h-14h30). Fermé le lundi.
+
+Menu du jour : du mardi au samedi à midi. Il change TOUS LES JOURS, Antoine le choisit le matin selon le marché, et il est écrit sur l'ardoise. Entrée + plat + dessert 16,50 euros ; entrée + plat ou plat + dessert 13,50 euros ; plat seul 10,50 euros. Chaque jour, le plat existe aussi en version végétarienne.
+Dimanche midi : menu du dimanche (entrée, plat, dessert) 26 euros, lui aussi différent chaque semaine.
+Menu du jour à emporter : à commander avant 11h30, à retirer entre 12h et 12h30.
+
+La carte (le soir, du mardi au samedi) :
+Entrées : velouté de saison 8 euros, salade de chèvre chaud de l'Ariège au miel 10 euros, terrine de campagne maison 9 euros.
+Plats : azinat (potée ariégeoise au chou) 18 euros, magret de canard sauce aux cèpes 22 euros, truite de l'Ariège au beurre blanc 19 euros, burger de bœuf gascon et frites maison 17 euros, risotto aux champignons (végétarien) 16 euros.
+Desserts : croustade aux pommes 8 euros, crème brûlée 7 euros, assiette de fromages de pays 8 euros.
+Menu enfant (moins de 12 ans) : plat, dessert et boisson 9 euros, midi et soir.
+
+Groupes : jusqu'à 30 personnes, menu groupe sur demande (anniversaires, repas de famille, repas d'entreprise).
+Terrasse ombragée sous le platane de mai à septembre.
 Réservation conseillée le vendredi soir, le samedi et le dimanche.
+Allergènes : la liste est disponible auprès de l'équipe ; pour une allergie, toujours la signaler à la réservation et la confirmer avec Lucie. Pas de cuisine certifiée sans gluten.
+Paiement : carte bancaire, espèces, titres-restaurant le midi.
 """,
+        # Le menu du jour change chaque jour : voir menu_du_jour() plus bas.
+        "menus_du_jour": True,
         "suggestions": [
+            "C'est quoi le menu du jour ?",
             "Une table pour 4 samedi soir ?",
-            "C'est combien le menu du midi ?",
             "Vous avez des plats végétariens ?",
             "On est 25 pour un anniversaire",
         ],
@@ -119,3 +133,59 @@ Les travaux d'entretien de jardin chez les particuliers peuvent ouvrir droit à 
         ],
     },
 }
+
+
+# ---------- Menu du jour du restaurant fictif ----------
+# 14 menus qui tournent : le menu change chaque jour et ne revient
+# qu'au bout de deux semaines. Le chatbot ne connait QUE celui du jour.
+MENUS = [
+    ("Velouté de potiron", "Sauté de porc noir de Bigorre aux pommes", "Gratin de potiron et pommes de terre", "Croustade aux pommes"),
+    ("Salade de lentilles du Puy", "Cuisse de poulet fermier rôtie, purée maison", "Galette de lentilles et légumes rôtis", "Crème caramel"),
+    ("Œuf cocotte aux champignons", "Azinat (potée ariégeoise au chou)", "Chou farci aux légumes et au riz", "Tarte aux poires"),
+    ("Carottes râpées à l'orange", "Filet de truite de l'Ariège, riz pilaf", "Curry de légumes et riz pilaf", "Mousse au chocolat"),
+    ("Terrine de campagne maison", "Bœuf bourguignon, pâtes fraîches", "Pâtes fraîches aux champignons et à la crème", "Île flottante"),
+    ("Soupe de légumes du jardin", "Saucisse de Toulouse, haricots blancs", "Haricots blancs mijotés à la tomate", "Riz au lait"),
+    ("Salade de betteraves et chèvre frais", "Blanquette de veau à l'ancienne", "Blanquette de légumes au lait de coco", "Tarte au citron"),
+    ("Poireaux vinaigrette", "Confit de canard, pommes sarladaises", "Omelette aux cèpes, pommes sarladaises", "Fromage blanc au miel"),
+    ("Velouté de châtaignes", "Daube de bœuf à l'ariégeoise", "Lasagnes aux légumes d'automne", "Gâteau basque"),
+    ("Salade de chèvre chaud", "Pavé de merlu, fondue de poireaux", "Tarte fine aux poireaux et au fromage de pays", "Compote maison et sablé"),
+    ("Crème de lentilles", "Rôti de porc au lait, gratin dauphinois", "Gratin dauphinois et salade verte", "Flan pâtissier"),
+    ("Céleri rémoulade", "Mounjetado (haricots et saucisse du pays)", "Mounjetado végétarien aux haricots tarbais", "Poire pochée au vin"),
+    ("Assiette de charcuterie du pays", "Poulet basquaise, riz", "Piperade aux œufs et riz", "Moelleux au chocolat"),
+    ("Soupe à l'oignon", "Hachis parmentier maison", "Parmentier de lentilles et patate douce", "Crumble pommes-cannelle"),
+]
+
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+        "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def maintenant_france():
+    """Date et heure en France (le serveur Render est a l'heure UTC)."""
+    from datetime import datetime, timedelta, timezone
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Europe/Paris"))
+    except Exception:
+        return datetime.now(timezone.utc) + timedelta(hours=1)
+
+
+def date_en_clair(moment):
+    return f"{JOURS[moment.weekday()]} {moment.day} {MOIS[moment.month - 1]} {moment.year}"
+
+
+def menu_du_jour(moment=None):
+    """Texte ajoute aux infos du restaurant : le menu d'aujourd'hui, et rien d'autre."""
+    moment = moment or maintenant_france()
+    jour = moment.weekday()
+    quand = date_en_clair(moment)
+    regle = ("Le menu change chaque jour. Tu ne connais QUE celui d'aujourd'hui : pour un autre jour "
+             "(demain, samedi, la semaine prochaine…), dis qu'Antoine le choisit le matin même selon "
+             "le marché et qu'il n'est pas encore connu. N'invente jamais un menu.")
+    if jour == 0:
+        return (f"AUJOURD'HUI ({quand}) : le restaurant est fermé (fermé le lundi), donc pas de menu du jour. "
+                + regle)
+    entree, plat, vege, dessert = MENUS[moment.date().toordinal() % len(MENUS)]
+    nom = "MENU DU DIMANCHE (26 euros)" if jour == 6 else "MENU DU JOUR (servi à midi)"
+    return (f"{nom} D'AUJOURD'HUI, {quand} : entrée : {entree} ; plat : {plat}, "
+            f"ou en version végétarienne : {vege} ; dessert : {dessert}. " + regle)
