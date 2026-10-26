@@ -450,30 +450,45 @@
   });
 
   // ---- micro (Chrome / Edge) ----
-  // Le texte s'affiche pendant qu'on parle (meme provisoire). Le micro coupe 4 s apres la fin
-  // de la voix (detectee sur l'ordinateur, pas sur Internet : une connexion lente ne coupe plus
-  // la phrase), ou au clic sur stop. Le texte reste dans la zone : on relit, puis Entree.
+  // La dictee de Chrome passe par Internet : avec une connexion lente, le texte arrive en retard.
+  // 1) On ecoute : le texte s'affiche des qu'il arrive.
+  // 2) Clic sur stop (ou 4 s apres la fin de la voix) : le micro se coupe, mais on ATTEND que le
+  //    texte arrive (bouton ⏳). Un 2e clic abandonne. Au bout de 20 s, on abandonne tout seul.
+  // 3) Le texte reste dans la zone : on relit, puis Entree.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var reco = null, ecoute = false, minuteur = null, dicte = "", enCours = "", parle = false;
-  var SILENCE_MS = 4000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, demarrage = 0;
+  var reco = null, ecoute = false, attente = false, parle = false;
+  var minuteur = null, filet = null, dicte = "", enCours = "";
+  var SILENCE_MS = 4000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, demarrage = 0;
 
   function relancerMinuteur(delai) {
     clearTimeout(minuteur);
-    minuteur = setTimeout(function () { if (reco && !parle) reco.stop(); }, delai || SILENCE_MS);
+    minuteur = setTimeout(function () { if (!parle) terminerMicro(); }, delai || SILENCE_MS);
   }
-  // Clic sur stop : on arrete TOUT DE SUITE (abort), sans attendre la reponse d'Internet.
-  // Le texte deja affiche est garde dans la zone.
-  function arreterMicro() {
-    clearTimeout(minuteur);
-    var r = reco; reco = null; parle = false;
+  // fin de l'ecoute : on coupe le micro mais on attend le texte qui arrive d'Internet
+  function terminerMicro() {
+    if (!reco || attente) return;
+    clearTimeout(minuteur); attente = true; parle = false;
+    $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "⏳";
+    $("btn-micro").title = "Texte en cours… cliquez pour abandonner";
+    $("saisie").placeholder = "J'écris ce que vous avez dit… (cliquez ⏳ pour abandonner)";
+    try { reco.stop(); } catch (e) {}
+    filet = setTimeout(abandonnerMicro, ATTENTE_TEXTE_MS);
+  }
+  // abandon immediat (2e clic, interrupteur coupe, ou trop long)
+  function abandonnerMicro() {
+    var r = reco; reco = null;
     if (r) { r.onresult = null; r.onerror = null; r.onend = null; try { r.abort(); } catch (e) {} }
     finMicro();
   }
   function finMicro() {
-    ecoute = false; parle = false;
+    clearTimeout(minuteur); clearTimeout(filet);
+    var rien = !(dicte + enCours).trim() && attente;
+    ecoute = false; attente = false; parle = false;
     $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
+    $("btn-micro").title = "Parler";
     $("saisie").placeholder = INVITE;
     afficherDictee(); dicte = ""; enCours = "";
+    if (rien) bulle("Le texte n'est pas arrivé à temps : la connexion est sans doute lente. Réessayez en parlant un peu plus longtemps, ou écrivez votre message.", "info");
     $("saisie").focus();
   }
   function afficherDictee() {
@@ -488,7 +503,7 @@
     $("btn-micro").classList.toggle("cache", !microActif);
     INVITE = microActif ? "Écrivez ou parlez… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)" : "Écrivez votre message… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)";
     if (!ecoute) $("saisie").placeholder = INVITE;
-    if (!microActif && ecoute) arreterMicro();
+    if (!microActif && ecoute) abandonnerMicro();
   }
   if (Reco) {
     $("encart-micro").classList.remove("cache");
@@ -499,22 +514,24 @@
     };
     appliquerMicro();
     $("btn-micro").onclick = function () {
-      if (ecoute) { arreterMicro(); return; }
+      if (attente) { abandonnerMicro(); return; }
+      if (ecoute) { terminerMicro(); return; }
       if (occupe) return;
       reco = new Reco();
       reco.lang = "fr-FR";
       reco.continuous = true;       // ne coupe pas a la premiere pause (numeros de telephone)
-      reco.interimResults = true;   // affiche le texte pendant qu'on parle
-      dicte = ""; enCours = ""; parle = false;
+      reco.interimResults = true;   // affiche le texte des qu'il arrive
+      dicte = ""; enCours = ""; parle = false; attente = false;
       reco.onstart = function () {
         ecoute = true; demarrage = Date.now();
         $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹";
+        $("btn-micro").title = "Finir";
         $("saisie").value = ""; $("saisie").placeholder = "Je vous écoute… (cliquez ⏹ pour finir)";
         relancerMinuteur(ATTENTE_DEBUT_MS);
       };
       // la voix est detectee sur l'ordinateur : tant qu'on parle, on ne coupe pas
       reco.onspeechstart = function () { parle = true; clearTimeout(minuteur); };
-      reco.onspeechend = function () { parle = false; relancerMinuteur(); };
+      reco.onspeechend = function () { parle = false; if (!attente) relancerMinuteur(); };
       reco.onresult = function (e) {
         enCours = "";
         for (var i = e.resultIndex; i < e.results.length; i++) {
@@ -522,7 +539,8 @@
           else enCours += e.results[i][0].transcript;
         }
         afficherDictee();
-        if (Date.now() - demarrage > MAX_MS) reco.stop(); else if (!parle) relancerMinuteur();
+        if (attente) return;
+        if (Date.now() - demarrage > MAX_MS) terminerMicro(); else if (!parle) relancerMinuteur();
       };
       reco.onerror = function (e) {
         if (e.error === "not-allowed" || e.error === "service-not-allowed") bulle("Le micro est bloqué : autorisez-le dans le navigateur (icône à gauche de l'adresse).", "info");
@@ -530,11 +548,11 @@
         else if (e.error === "network") bulle("La dictée a besoin d'Internet et la connexion est trop lente : écrivez votre message.", "info");
       };
       reco.onend = function () {
-        clearTimeout(minuteur); reco = null;
+        reco = null;
         // on n'envoie pas tout seul : le client relit, corrige si besoin, puis Entree
         finMicro();
       };
-      try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
+      try { reco.start(); } catch (err) { reco = null; bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
     };
   }
 
