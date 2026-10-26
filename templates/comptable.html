@@ -102,6 +102,13 @@
   .vu-ia b { display: block; font-size: 11px; color: var(--gris); font-weight: 500; margin-bottom: 2px; }
   .masque { background: var(--vert); color: #fff; padding: 1px 6px; border-radius: 5px; font-size: 12px; white-space: nowrap; }
   .btn-transparence { width: 100%; margin-top: 8px; font-size: 14px; }
+  .interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+  .interrupteur span.libelle { font-size: 14px; font-weight: 500; }
+  .interrupteur small { display: block; font-size: 12px; color: var(--gris); font-weight: 400; }
+  .bascule { position: relative; width: 50px; height: 28px; flex-shrink: 0; border-radius: 14px; background: #cfd8d3; border: none; cursor: pointer; transition: background .2s; }
+  .bascule::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .bascule[aria-checked="true"] { background: var(--orange); }
+  .bascule[aria-checked="true"]::after { left: 25px; }
   .protege { margin-top: 16px; background: var(--vert-doux); border-left: 4px solid var(--vert); padding: 12px 14px; border-radius: 8px; font-size: 13px; }
   .fiche-pied { padding: 0 22px 20px; text-align: right; }
 
@@ -227,6 +234,12 @@
           <p>Après quelques échanges, voyez la fiche que l'artisan recevrait : le besoin, l'urgence, la commune, le créneau.</p>
           <button class="btn btn-orange" id="btn-fiche">Voir la fiche de demande</button>
           <button class="btn btn-ligne btn-transparence" id="btn-vu-ia">Ce que l'IA a reçu</button>
+        </div>
+        <div class="encart cache" id="encart-micro">
+          <div class="interrupteur">
+            <span class="libelle">🎤 Version avec micro<small id="micro-etat">Le client peut parler au lieu d'écrire</small></span>
+            <button class="bascule" id="bascule-micro" role="switch" aria-checked="true" aria-label="Activer ou couper le micro"></button>
+          </div>
         </div>
         <button class="btn btn-ligne" id="btn-retour">← Changer de métier</button>
       </div>
@@ -419,8 +432,24 @@
     minuteur = setTimeout(function () { if (reco) reco.stop(); }, delai || SILENCE_MS);
   }
 
+  var microActif = true;
+  try { microActif = localStorage.getItem("demo_micro") !== "non"; } catch (e) {}
+  function appliquerMicro() {
+    $("bascule-micro").setAttribute("aria-checked", microActif ? "true" : "false");
+    $("micro-etat").textContent = microActif ? "Le client peut parler au lieu d'écrire" : "Coupé : le client écrit seulement";
+    $("btn-micro").classList.toggle("cache", !microActif);
+    INVITE = microActif ? "Écrivez ou parlez… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)" : "Écrivez votre message… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)";
+    if (!ecoute) $("saisie").placeholder = INVITE;
+    if (!microActif && ecoute && reco) reco.stop();
+  }
   if (Reco) {
-    $("btn-micro").classList.remove("cache");
+    $("encart-micro").classList.remove("cache");
+    $("bascule-micro").onclick = function () {
+      microActif = !microActif;
+      try { localStorage.setItem("demo_micro", microActif ? "oui" : "non"); } catch (e) {}
+      appliquerMicro();
+    };
+    appliquerMicro();
     $("btn-micro").onclick = function () {
       if (ecoute) { clearTimeout(minuteur); reco.stop(); return; }
       if (occupe) return;
