@@ -212,18 +212,33 @@ def date_en_clair(moment):
     return f"{JOURS[moment.weekday()]} {moment.day} {MOIS[moment.month - 1]} {moment.year}"
 
 
+HISTORIQUE_JOURS = 14  # le chatbot se souvient des menus des 2 dernieres semaines
+
+
+def _menu_de(jour_date):
+    """Le menu servi un jour donne (None le lundi : ferme)."""
+    if jour_date.weekday() == 0:
+        return None
+    entree, plat, vege, dessert = MENUS[jour_date.toordinal() % len(MENUS)]
+    nom = "menu du dimanche (26 euros)" if jour_date.weekday() == 6 else "menu du jour"
+    return (f"{nom} : entrée : {entree} ; plat : {plat}, ou en version végétarienne : {vege} ; "
+            f"dessert : {dessert}")
+
+
 def menu_du_jour(moment=None):
-    """Texte ajoute aux infos du restaurant : le menu d'aujourd'hui, et rien d'autre."""
+    """Texte ajoute aux infos du restaurant : le menu d'aujourd'hui et ceux des 2 dernieres semaines."""
+    from datetime import timedelta
     moment = moment or maintenant_france()
-    jour = moment.weekday()
-    quand = date_en_clair(moment)
-    regle = ("Le menu change chaque jour. Tu ne connais QUE celui d'aujourd'hui : pour un autre jour "
-             "(demain, samedi, la semaine prochaine…), dis qu'Antoine le choisit le matin même selon "
-             "le marché et qu'il n'est pas encore connu. N'invente jamais un menu.")
-    if jour == 0:
-        return (f"AUJOURD'HUI ({quand}) : le restaurant est fermé (fermé le lundi), donc pas de menu du jour. "
-                + regle)
-    entree, plat, vege, dessert = MENUS[moment.date().toordinal() % len(MENUS)]
-    nom = "MENU DU DIMANCHE (26 euros)" if jour == 6 else "MENU DU JOUR (servi à midi)"
-    return (f"{nom} D'AUJOURD'HUI, {quand} : entrée : {entree} ; plat : {plat}, "
-            f"ou en version végétarienne : {vege} ; dessert : {dessert}. " + regle)
+    aujourd_hui = moment.date()
+    lignes = []
+    for n in range(HISTORIQUE_JOURS + 1):
+        jour = aujourd_hui - timedelta(days=n)
+        etiquette = "AUJOURD'HUI" if n == 0 else ("hier" if n == 1 else f"il y a {n} jours")
+        menu = _menu_de(jour) or "fermé (fermé le lundi), pas de menu"
+        lignes.append(f"- {date_en_clair(jour)} ({etiquette}) : {menu}")
+    regle = ("Le menu change chaque jour. Tu connais celui d'aujourd'hui et ceux des deux dernières "
+             "semaines (liste ci-dessus), avec leur date : utilise la date exacte quand on te parle "
+             "d'hier, de samedi dernier, etc. Pour un jour à venir (demain, samedi prochain…), dis "
+             "qu'Antoine le choisit le matin même selon le marché et qu'il n'est pas encore connu. "
+             "Au-delà de deux semaines, dis que tu ne l'as plus. N'invente jamais un menu.")
+    return "MENUS DU RESTAURANT (le menu du jour est servi à midi) :\n" + "\n".join(lignes) + "\n" + regle

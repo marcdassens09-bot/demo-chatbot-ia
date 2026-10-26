@@ -466,7 +466,7 @@ def faire_fiche(public):
     consigne = (
         "Voici une conversation entre un client et l'assistant de "
         f"{fiche['nom']} ({fiche['metier']}).\n\n"
-        f"Informations sur l'entreprise (horaires, etc.) :\n{infos_du_jour(fiche)[:4000]}\n\n"
+        f"Informations sur l'entreprise (horaires, etc.) :\n{infos_du_jour(fiche)[:8000]}\n\n"
         f"Conversation :\n{conversation}\n\n"
         "Fais la fiche de demande pour l'artisan. Réponds UNIQUEMENT avec un objet JSON, "
         "sans texte autour, avec ces clés (valeurs courtes en français correct, avec tous les accents, "
