@@ -461,6 +461,21 @@
     clearTimeout(minuteur);
     minuteur = setTimeout(function () { if (reco && !parle) reco.stop(); }, delai || SILENCE_MS);
   }
+  // Clic sur stop : on arrete TOUT DE SUITE (abort), sans attendre la reponse d'Internet.
+  // Le texte deja affiche est garde dans la zone.
+  function arreterMicro() {
+    clearTimeout(minuteur);
+    var r = reco; reco = null; parle = false;
+    if (r) { r.onresult = null; r.onerror = null; r.onend = null; try { r.abort(); } catch (e) {} }
+    finMicro();
+  }
+  function finMicro() {
+    ecoute = false; parle = false;
+    $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
+    $("saisie").placeholder = INVITE;
+    afficherDictee(); dicte = ""; enCours = "";
+    $("saisie").focus();
+  }
   function afficherDictee() {
     $("saisie").value = (dicte + " " + enCours).trim(); ajusterSaisie();
   }
@@ -473,7 +488,7 @@
     $("btn-micro").classList.toggle("cache", !microActif);
     INVITE = microActif ? "Écrivez ou parlez… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)" : "Écrivez votre message… (Entrée pour envoyer, Maj + Entrée pour aller à la ligne)";
     if (!ecoute) $("saisie").placeholder = INVITE;
-    if (!microActif && ecoute && reco) reco.stop();
+    if (!microActif && ecoute) arreterMicro();
   }
   if (Reco) {
     $("encart-micro").classList.remove("cache");
@@ -484,7 +499,7 @@
     };
     appliquerMicro();
     $("btn-micro").onclick = function () {
-      if (ecoute) { clearTimeout(minuteur); parle = false; reco.stop(); return; }
+      if (ecoute) { arreterMicro(); return; }
       if (occupe) return;
       reco = new Reco();
       reco.lang = "fr-FR";
@@ -515,13 +530,9 @@
         else if (e.error === "network") bulle("La dictée a besoin d'Internet et la connexion est trop lente : écrivez votre message.", "info");
       };
       reco.onend = function () {
-        clearTimeout(minuteur);
-        ecoute = false; parle = false;
-        $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
-        $("saisie").placeholder = INVITE;
-        afficherDictee(); dicte = ""; enCours = "";
+        clearTimeout(minuteur); reco = null;
         // on n'envoie pas tout seul : le client relit, corrige si besoin, puis Entree
-        $("saisie").focus();
+        finMicro();
       };
       try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
     };
