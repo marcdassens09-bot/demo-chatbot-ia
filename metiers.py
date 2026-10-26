@@ -8,20 +8,25 @@ METIERS = {
         "nom": "Martin Plomberie Chauffage",
         "artisan": "Julien Martin",
         "infos": """
-Entreprise fictive de démonstration, basée à Lézat-sur-Lèze (Ariège).
-Services : dépannage fuite d'eau, débouchage, remplacement et entretien de chauffe-eau et ballon thermodynamique, entretien annuel de chaudière gaz et fioul, installation de salle de bain, pompe à chaleur.
+Entreprise fictive de démonstration, basée à Lézat-sur-Lèze (Ariège). Chauffagiste et plombier depuis plus de 10 ans, une petite équipe d'artisans.
+Labels : artisan RGE (QualiPAC pour les pompes à chaleur), Qualibat, Professionnel du Gaz.
+
+Chauffage (toutes énergies) : installation de chaudières gaz et fioul, pompes à chaleur air/eau et air/air, remplacement d'un ancien chauffage, plancher chauffant, entretien annuel de chaudière, dépannage chaudière et chauffage.
+Plomberie et salle de bain : création de salle de bain avec plan en 3D pour visualiser le projet avant les travaux, rénovation complète, remplacement de WC, douche, baignoire, lavabo, recherche et réparation de fuites, débouchage, chauffe-eau et ballon thermodynamique, adoucisseur d'eau.
+Climatisation : climatisation réversible et gainable, entretien et dépannage.
+
 Horaires : du lundi au vendredi 8h-12h et 13h30-18h. Samedi matin pour les urgences uniquement.
 Urgences (fuite importante, plus d'eau chaude, plus de chauffage) : rappel dans l'heure en journée.
 Zone : Lézat-sur-Lèze, Saverdun, Le Fossat, Artigat, Pamiers et 25 km autour.
 Déplacement dépannage : 45 euros TTC, offert si les travaux sont acceptés.
 Entretien chaudière gaz : à partir de 120 euros TTC.
-Devis gratuit pour les installations, visite sur place sous 7 jours.
+Démarche pour un projet : le client décrit son projet, une visite sur place est fixée sous 7 jours, puis un devis gratuit et détaillé est envoyé.
 """,
         "suggestions": [
             "J'ai une fuite sous l'évier",
+            "Vous installez des pompes à chaleur ?",
+            "Je voudrais refaire ma salle de bain",
             "Combien pour l'entretien de ma chaudière ?",
-            "Vous intervenez à Saverdun ?",
-            "Je voudrais un devis pour une douche à l'italienne",
         ],
     },
     "electricien": {
