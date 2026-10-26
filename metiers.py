@@ -56,7 +56,7 @@ Borne de recharge : devis gratuit après visite technique.
         "nom": "Boulangerie du Moulin",
         "artisan": "Sophie et Karim",
         "infos": """
-Boulangerie-pâtisserie fictive de démonstration, au Fossat (Ariège). Tenue par un couple : Karim au fournil, Sophie en boutique.
+Boulangerie-pâtisserie fictive de démonstration, à Pailhès (Ariège). Tenue par un couple : Karim au fournil, Sophie en boutique.
 Le pain : levain naturel, pétrissage lent et façonnage à la main. Pain simple : farine, eau, sel, et rien d'autre. Farines bio en grande partie, œufs d'une ferme voisine, fruits de la région selon la saison.
 Horaires : du mardi au samedi 6h30-13h et 15h30-19h, dimanche 7h-12h30. Fermé le lundi.
 
