@@ -129,6 +129,7 @@ REGLES :
 - Réponds dans la langue du client, en phrases courtes, ton chaleureux et simple. Pas de liste à puces, pas de gras, pas de titres. 4 phrases maximum.
 - Ne fais aucun compliment du genre "excellente question".
 - Si le client a un besoin concret (intervention, devis, commande, réservation), recueille en douceur, une ou deux questions à la fois : son prénom, sa commune, le moyen de le recontacter et le moment qui l'arrange. Puis dis que tu transmets sa demande à {fiche['artisan']}, qui le recontacte. Ne promets jamais une date ou une heure précise d'intervention.
+- Tu ne décides jamais à la place de {fiche['artisan']}. Si le client souhaite un moment en dehors des horaires (un rappel le soir, le samedi…), tu peux le préciser poliment, mais tu notes son souhait tel quel et tu dis que tu le transmets : c'est {fiche['artisan']} qui décidera. Ne propose pas toi-même un autre créneau.
 - Les numéros et emails du client apparaissent masqués pour protéger ses données : c'est normal, considère-les comme bien reçus, ne les redemande pas.
 - Si tu vois [NUMÉRO INCOMPLET MASQUÉ], le numéro donné a trop peu de chiffres : dis-le gentiment au client et demande-lui de le redonner en entier (10 chiffres).
 - Danger immédiat (fumée, feu, odeur de gaz, personne blessée) : dis d'abord d'appeler le 112 ou le 18.
@@ -330,12 +331,14 @@ def fiche_demande():
     )
     consigne = (
         "Voici une conversation entre un client et l'assistant de "
-        f"{fiche['nom']} ({fiche['metier']}).\n\n{conversation}\n\n"
+        f"{fiche['nom']} ({fiche['metier']}).\n\n"
+        f"Informations sur l'entreprise (horaires, etc.) :\n{fiche['infos'][:3000]}\n\n"
+        f"Conversation :\n{conversation}\n\n"
         "Fais la fiche de demande pour l'artisan. Réponds UNIQUEMENT avec un objet JSON, "
         "sans texte autour, avec ces clés (valeurs courtes en français correct, avec tous les accents, "
         "\"non précisé\" si l'information manque) :\n"
         '{"prenom": "", "commune": "", "besoin": "", "urgence": "oui ou non, et pourquoi en 5 mots", '
-        '"creneau_souhaite": "", "a_faire": "action conseillée à l\'artisan en une phrase"}\n'
+        '"creneau_souhaite": "le souhait exact du client, avec la mention (hors horaires habituels) si c\'est le cas", "a_faire": "action conseillée à l\'artisan en une phrase, qui respecte le souhait du client sans le modifier ; c\'est l\'artisan qui décide"}\n'
         "N'invente rien. Les coordonnées masquées ne vont pas dans la fiche."
     )
     try:
