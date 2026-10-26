@@ -56,19 +56,24 @@ Borne de recharge : devis gratuit après visite technique.
         "nom": "Boulangerie du Moulin",
         "artisan": "Sophie et Karim",
         "infos": """
-Boulangerie-pâtisserie fictive de démonstration, au Fossat (Ariège).
+Boulangerie-pâtisserie fictive de démonstration, à Pailhès (Ariège). Tenue par un couple : Karim au fournil, Sophie en boutique.
+Le pain : levain naturel, pétrissage lent et façonnage à la main. Pain simple : farine, eau, sel, et rien d'autre. Farines bio en grande partie, œufs d'une ferme voisine, fruits de la région selon la saison.
 Horaires : du mardi au samedi 6h30-13h et 15h30-19h, dimanche 7h-12h30. Fermé le lundi.
-Pains : baguette tradition, pain de campagne au levain, pain complet, pain aux céréales, pain sans sel sur commande.
-Pâtisseries : tartes aux fruits de saison, éclairs, flan, gâteaux d'anniversaire sur commande.
-Commandes : gâteaux et grosses quantités de pain à commander au moins 48 heures à l'avance.
+
+Pains au levain : pain du Moulin (farine semi-complète moulue à la meule), pain aux graines (tournesol, courge, pavot, lin), pain complet, pain aux noix, pain miel et noisettes, pain raisins et amandes, pain aux olives noires, tourte de seigle, pain d'épeautre, pain blanc, baguette tradition, pain de mie.
+Viennoiseries : croissant, pain au chocolat, pain aux raisins, brioche nature, brioche aux pépites de chocolat, brioche aux pralines, roulé à la cannelle.
+Pâtisseries : tarte aux pommes, tarte citron, tarte chocolat noisettes, flan, carrot cake, brownie, cookies (chocolat noir, chocolat et noisettes, avoine et coco).
+Salé : fougasse aux olives et romarin, fougasse lardons et fromage, focaccia.
+Gâteaux d'anniversaire et grosses quantités de pain : à commander au moins 48 heures à l'avance, par téléphone ou en boutique, à retirer en boutique.
+
 Allergènes : la liste des allergènes de chaque produit est affichée en boutique ; pour une allergie, toujours confirmer avec l'équipe. Pas de produits certifiés sans gluten.
 Paiement : espèces, carte bancaire.
 """,
         "suggestions": [
             "Vous êtes ouverts le lundi ?",
+            "Vous faites du pain au levain ?",
             "Je voudrais commander un gâteau pour samedi",
             "Vous avez du pain sans gluten ?",
-            "Il me faudrait 20 baguettes dimanche",
         ],
     },
     "restaurant": {
