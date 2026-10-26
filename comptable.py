@@ -12,7 +12,7 @@ from anthropic import Anthropic
 from flask import Blueprint, jsonify, render_template, request, send_from_directory
 
 from lecteur_site import SiteIllisible, lire_site
-from metiers import METIERS
+from metiers import METIERS, date_en_clair, maintenant_france, menu_du_jour
 
 comptable_bp = Blueprint("comptable", __name__)
 client = Anthropic(timeout=30.0)
@@ -190,11 +190,21 @@ def prompt_systeme(fiche):
     ]
 
 
+def infos_du_jour(fiche):
+    """Infos de l'entreprise + la date du jour (et le menu du jour pour le restaurant)."""
+    maintenant = maintenant_france()
+    texte = fiche["infos"].strip()
+    if fiche.get("menus_du_jour"):
+        texte += "\n\n" + menu_du_jour(maintenant)
+    return (f"Nous sommes le {date_en_clair(maintenant)}, il est {maintenant:%H}h{maintenant:%M} "
+            f"(heure française).\n\n" + texte)
+
+
 def regles_systeme(fiche):
     return f"""Tu es l'assistant virtuel de {fiche['nom']} ({fiche['metier']}). Tu es une intelligence artificielle, pas un humain : si on te le demande, dis-le clairement.
 
 INFORMATIONS VÉRIFIÉES SUR L'ENTREPRISE (ta source principale) :
-{fiche['infos'].strip()}
+{infos_du_jour(fiche)}
 
 REGLES :
 - N'invente jamais un prix, un horaire, un service, un produit ou un délai absent de ces informations (et du texte du site s'il est fourni). Ne déduis rien : si ce n'est pas écrit, tu ne sais pas. Si tu ne sais pas, dis que {fiche['artisan']} répondra directement.
@@ -456,7 +466,7 @@ def faire_fiche(public):
     consigne = (
         "Voici une conversation entre un client et l'assistant de "
         f"{fiche['nom']} ({fiche['metier']}).\n\n"
-        f"Informations sur l'entreprise (horaires, etc.) :\n{fiche['infos'][:3000]}\n\n"
+        f"Informations sur l'entreprise (horaires, etc.) :\n{infos_du_jour(fiche)[:4000]}\n\n"
         f"Conversation :\n{conversation}\n\n"
         "Fais la fiche de demande pour l'artisan. Réponds UNIQUEMENT avec un objet JSON, "
         "sans texte autour, avec ces clés (valeurs courtes en français correct, avec tous les accents, "
