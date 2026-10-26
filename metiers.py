@@ -140,6 +140,36 @@ Les travaux d'entretien de jardin chez les particuliers peuvent ouvrir droit à 
             "C'est déductible des impôts ?",
         ],
     },
+    "garagiste": {
+        "emoji": "🚗",
+        "metier": "Garagiste",
+        "nom": "Garage des Coteaux",
+        "artisan": "Nicolas Ferrer",
+        "infos": """
+Garage fictif de démonstration, à Saint-Ybars (Ariège). Garage indépendant toutes marques, tenu par Nicolas Ferrer et un mécanicien.
+Entretien : vidange, révision selon le carnet d'entretien du constructeur, filtres, bougies, courroie de distribution, recharge de climatisation.
+Réparation : freins (plaquettes, disques), embrayage, échappement, amortisseurs, batterie, démarreur, alternateur, diagnostic électronique des voyants.
+Pneus : montage, équilibrage, géométrie, pneus hiver et 4 saisons, sur devis selon la taille.
+Voitures hybrides et électriques : entretien courant seulement (freins, pneus, filtres, climatisation). Pas d'intervention sur la batterie haute tension : il faut voir le concessionnaire de la marque.
+Contrôle technique : le garage ne le fait pas, mais prépare la voiture avant le passage et fait les réparations demandées après une contre-visite.
+Pièces : d'origine ou de qualité équivalente, au choix du client, indiqué sur le devis.
+
+Horaires : du lundi au vendredi 8h-12h et 14h-18h30, samedi 8h-12h. Fermé le dimanche.
+Rendez-vous : en général sous une semaine pour un entretien. Devis gratuit avant toute réparation, rien n'est fait sans l'accord du client.
+Tarifs : main-d'œuvre 65 euros TTC de l'heure ; vidange avec filtre à huile à partir de 89 euros TTC (petite citadine) ; diagnostic électronique 49 euros TTC, déduit si la réparation est faite au garage. Les autres prix dépendent du modèle de la voiture : sur devis.
+Véhicule de courtoisie : une voiture de prêt, sur réservation, pour les réparations de plus d'une journée.
+Dépannage : remorquage en journée dans un rayon de 20 km autour de Saint-Ybars. Pas de dépannage sur autoroute (il faut utiliser les bornes d'appel ou appeler le 112).
+Paiement : carte bancaire, espèces, chèque.
+Le garage ne peut pas faire de diagnostic à distance : seul un passage au garage permet de savoir ce qu'a la voiture et combien coûtera la réparation.
+Sécurité : voyant rouge allumé, fumée, odeur de brûlé ou freins qui répondent mal : s'arrêter dès que possible en lieu sûr et ne pas reprendre la route.
+""",
+        "suggestions": [
+            "Mon voyant moteur s'est allumé",
+            "Combien pour une vidange ?",
+            "Vous faites le contrôle technique ?",
+            "Vous avez une voiture de prêt ?",
+        ],
+    },
 }
 
 
