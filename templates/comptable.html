@@ -450,14 +450,19 @@
   });
 
   // ---- micro (Chrome / Edge) ----
-  // Micro ouvert tant qu'on parle : coupe apres 3 s de silence ou au clic sur stop.
+  // Le texte s'affiche pendant qu'on parle (meme provisoire). Le micro coupe 4 s apres la fin
+  // de la voix (detectee sur l'ordinateur, pas sur Internet : une connexion lente ne coupe plus
+  // la phrase), ou au clic sur stop. Le texte reste dans la zone : on relit, puis Entree.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var reco = null, ecoute = false, minuteur = null, dicte = "", enCours = "";
-  var SILENCE_MS = 3000, ATTENTE_DEBUT_MS = 8000, MAX_MS = 60000, demarrage = 0;
+  var reco = null, ecoute = false, minuteur = null, dicte = "", enCours = "", parle = false;
+  var SILENCE_MS = 4000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, demarrage = 0;
 
   function relancerMinuteur(delai) {
     clearTimeout(minuteur);
-    minuteur = setTimeout(function () { if (reco) reco.stop(); }, delai || SILENCE_MS);
+    minuteur = setTimeout(function () { if (reco && !parle) reco.stop(); }, delai || SILENCE_MS);
+  }
+  function afficherDictee() {
+    $("saisie").value = (dicte + " " + enCours).trim(); ajusterSaisie();
   }
 
   var microActif = true;
@@ -479,39 +484,44 @@
     };
     appliquerMicro();
     $("btn-micro").onclick = function () {
-      if (ecoute) { clearTimeout(minuteur); reco.stop(); return; }
+      if (ecoute) { clearTimeout(minuteur); parle = false; reco.stop(); return; }
       if (occupe) return;
       reco = new Reco();
       reco.lang = "fr-FR";
       reco.continuous = true;       // ne coupe pas a la premiere pause (numeros de telephone)
-      reco.interimResults = true;   // sert seulement a savoir qu'on parle encore (minuteur) ; on n'affiche que les phrases finies
-      dicte = ""; enCours = "";
+      reco.interimResults = true;   // affiche le texte pendant qu'on parle
+      dicte = ""; enCours = ""; parle = false;
       reco.onstart = function () {
         ecoute = true; demarrage = Date.now();
         $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹";
         $("saisie").value = ""; $("saisie").placeholder = "Je vous écoute… (cliquez ⏹ pour finir)";
         relancerMinuteur(ATTENTE_DEBUT_MS);
       };
+      // la voix est detectee sur l'ordinateur : tant qu'on parle, on ne coupe pas
+      reco.onspeechstart = function () { parle = true; clearTimeout(minuteur); };
+      reco.onspeechend = function () { parle = false; relancerMinuteur(); };
       reco.onresult = function (e) {
         enCours = "";
         for (var i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) dicte = (dicte + " " + e.results[i][0].transcript).trim();
           else enCours += e.results[i][0].transcript;
         }
-        $("saisie").value = dicte; ajusterSaisie();
-        if (Date.now() - demarrage > MAX_MS) reco.stop(); else relancerMinuteur();
+        afficherDictee();
+        if (Date.now() - demarrage > MAX_MS) reco.stop(); else if (!parle) relancerMinuteur();
       };
       reco.onerror = function (e) {
         if (e.error === "not-allowed" || e.error === "service-not-allowed") bulle("Le micro est bloqué : autorisez-le dans le navigateur (icône à gauche de l'adresse).", "info");
         else if (e.error === "no-speech") bulle("Je n'ai rien entendu, réessayez.", "info");
+        else if (e.error === "network") bulle("La dictée a besoin d'Internet et la connexion est trop lente : écrivez votre message.", "info");
       };
       reco.onend = function () {
         clearTimeout(minuteur);
-        ecoute = false;
+        ecoute = false; parle = false;
         $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
         $("saisie").placeholder = INVITE;
-        var t = (dicte + " " + enCours).trim(); dicte = ""; enCours = "";
-        if (t) envoyer(t);
+        afficherDictee(); dicte = ""; enCours = "";
+        // on n'envoie pas tout seul : le client relit, corrige si besoin, puis Entree
+        $("saisie").focus();
       };
       try { reco.start(); } catch (err) { bulle("Le micro n'a pas pu démarrer, réessayez.", "info"); }
     };
