@@ -117,12 +117,20 @@ Paiement : carte bancaire, espèces, titres-restaurant le midi.
         "nom": "Jardins Delmas",
         "artisan": "Pierre Delmas",
         "infos": """
-Entreprise de paysage fictive de démonstration, basée à Artigat (Ariège).
-Services : tonte, taille de haies, élagage, débroussaillage, création de jardins, plantations, entretien à l'année par contrat.
-Horaires : du lundi au vendredi 8h-18h.
+Entreprise de paysage fictive de démonstration, basée à Artigat (Ariège). Pierre Delmas, paysagiste depuis 15 ans, et un salarié.
+Façon de travailler : pas de produits chimiques (désherbage à la main ou à la binette), outils sur batterie plus silencieux, déchets verts emmenés à la déchetterie ou broyés en paillage sur place si le client le souhaite.
+
+Entretien : tonte, taille de haies et d'arbustes, désherbage des massifs et des allées, ramassage des feuilles, nettoyage de printemps et d'automne, débroussaillage de terrains en friche.
+Arbres : élagage et taille des arbres fruitiers et d'ornement, abattage de petits arbres, dessouchage. Pour les grands arbres proches d'une maison ou d'une ligne électrique : visite obligatoire avant tout devis.
+Création : jardin complet sur plan, engazonnement, haies et massifs, plantations (plantes adaptées au climat ariégeois et peu gourmandes en eau), arrosage automatique, allées en gravier, bordures, petits murets en pierre, terrasses en bois, pose de clôtures et de portails de jardin.
+
+Horaires : du lundi au vendredi 8h-18h. Pas d'intervention le week-end.
 Zone : Artigat, Le Fossat, Lézat-sur-Lèze, Pamiers, Saverdun et 30 km autour.
-Devis gratuit après visite sur place.
-Contrat d'entretien annuel possible (passages réguliers).
+Tarifs : entretien de jardin 38 euros TTC de l'heure ; évacuation des déchets verts en plus, selon le volume. Création, élagage, abattage : sur devis.
+Devis : gratuit, après une visite sur place fixée sous 10 jours ; le devis est envoyé par email dans la semaine qui suit.
+Contrat d'entretien à l'année : passages réguliers (toutes les 2 semaines en saison, une fois par mois l'hiver), prix fixé au devis.
+Par mauvais temps (pluie forte, gel), le passage est décalé et le client est prévenu.
+Paiement : virement, chèque, CESU préfinancé.
 Les travaux d'entretien de jardin chez les particuliers peuvent ouvrir droit à l'avantage fiscal des services à la personne selon les conditions en vigueur ; l'entreprise précise ce point sur le devis.
 """,
         "suggestions": [
