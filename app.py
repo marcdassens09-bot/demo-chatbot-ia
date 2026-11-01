@@ -151,8 +151,11 @@ def generer_rapport():
     except Exception as e:
         print(f"Erreur lecture reporting : {e}", flush=True)
         return "Les questions enregistrées sont momentanément illisibles. Réessayez dans quelques minutes."
-    questions = [f"[{ev.get('profile', '?')}] {str(ev.get('question', '')).strip()}" for ev in events[-50:]
-                 if str(ev.get("question", "")).strip()]
+    # Les réponses courtes ("oui", "ok", une ville seule) sont écartées : sans la
+    # conversation autour, le modèle les prenait pour une perte de contexte du bot
+    # (rapport du 01/11/2026). Même seuil que le camping (plus de 4 mots).
+    questions = [f"[{ev.get('profile', '?')}] {str(ev.get('question', '')).strip()}" for ev in events
+                 if len(str(ev.get("question", "")).split()) > 4][-50:]
     if not questions:
         return "Aucune question enregistrée pour le moment."
     try:
@@ -162,7 +165,9 @@ def generer_rapport():
             thinking={"type": "disabled"},
             system=(
                 "Analyse ces questions posées par des prospects qui testent la démonstration de "
-                "chatbot de MP Solutions IA (entre crochets : l'entreprise fictive choisie). Génère un "
+                "chatbot de MP Solutions IA (entre crochets : l'entreprise fictive choisie). Les "
+                "réponses courtes (oui, ok, une ville seule) ont été retirées : le chatbot, lui, voit "
+                "toute la conversation, ne conclus donc pas à une perte de contexte. Génère un "
                 "rapport en Markdown, concis : métiers les plus testés, Top 3 sujets (%), signaux "
                 "d'intérêt commercial, points où la démo répond mal, 1 conseil concret pour améliorer la démo."
             ),
