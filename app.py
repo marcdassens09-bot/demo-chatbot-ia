@@ -1,15 +1,24 @@
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import re
+import hmac
+import html
+from datetime import datetime
+import markdown
 from flask import Flask, request, jsonify, render_template, send_from_directory
+from markupsafe import Markup
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
 import smtplib
 from email.mime.text import MIMEText
 from clients import get_client
+from reporting_logger import log_event
+from reporting_dashboard import reporting_bp
+from reporting_stats import load_events
 
 load_dotenv()
+REPORTING_LOG_PATH = os.environ.get("REPORTING_LOG_PATH", "chat_events.jsonl")
 def filtrer_donnees_sensibles(texte):
     texte = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '[EMAIL MASQUÉ]', texte)
     texte = re.sub(r'\b0[1-9](\s?\d{2}){4}\b', '[TÉLÉPHONE MASQUÉ]', texte)
@@ -21,6 +30,7 @@ limiter = Limiter(get_remote_address, app=app, default_limits=["20 per minute"])
 from comptable import comptable_bp
 limiter.limit("15 per minute")(comptable_bp)
 app.register_blueprint(comptable_bp)
+app.register_blueprint(reporting_bp)
 client = Anthropic(timeout=30.0)
 GMAIL_USER = "mpsolutionsia@gmail.com"
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
@@ -119,11 +129,71 @@ def chat():
             "role": "assistant",
             "content": texte
         })
+        log_event(
+            log_path=REPORTING_LOG_PATH,
+            question=filtrer_donnees_sensibles(message),
+            profile=client_id,
+            answered=texte != "Je recherche des informations pour vous...",
+            client_name="Démo MP Solutions IA",
+        )
         return jsonify({"reponse": texte, "historique": historique})
     except Exception as e:
         print(f"Erreur API chat : {e}")
         return jsonify({"reponse": "Désolé, je rencontre un problème technique. Merci de réessayer dans quelques instants."}), 500
 
-port = int(os.environ.get("PORT", 5000))
-app.run(host="0.0.0.0", port=port)
+def generer_rapport():
+    """Analyse par Claude des 50 dernières questions posées à la démo.
+    Même source que /reporting : Google Sheet si REPORTING_SHEET_URL, sinon fichier."""
+    try:
+        events = load_events(REPORTING_LOG_PATH, days=30)
+    except Exception as e:
+        print(f"Erreur lecture reporting : {e}", flush=True)
+        return "Les questions enregistrées sont momentanément illisibles. Réessayez dans quelques minutes."
+    questions = [f"[{ev.get('profile', '?')}] {str(ev.get('question', '')).strip()}" for ev in events[-50:]
+                 if str(ev.get("question", "")).strip()]
+    if not questions:
+        return "Aucune question enregistrée pour le moment."
+    try:
+        resultat = client.messages.create(
+            model="claude-sonnet-5",
+            max_tokens=1500,
+            thinking={"type": "disabled"},
+            system=(
+                "Analyse ces questions posées par des prospects qui testent la démonstration de "
+                "chatbot de MP Solutions IA (entre crochets : l'entreprise fictive choisie). Génère un "
+                "rapport en Markdown, concis : métiers les plus testés, Top 3 sujets (%), signaux "
+                "d'intérêt commercial, points où la démo répond mal, 1 conseil concret pour améliorer la démo."
+            ),
+            messages=[{"role": "user", "content": "Questions : " + " | ".join(questions)}],
+        )
+        return resultat.content[0].text.strip()
+    except Exception as e:
+        print(f"Erreur rapport : {e}", flush=True)
+        return "Le rapport est momentanément indisponible. Réessayez dans quelques minutes."
+
+
+@app.route("/rapport")
+def rapport():
+    # Pas de clé par défaut : sans RAPPORT_CLE sur Render, la route reste fermée.
+    cle = request.args.get("cle", "")
+    cle_attendue = os.environ.get("RAPPORT_CLE", "")
+    if not cle_attendue or not hmac.compare_digest(cle, cle_attendue):
+        return jsonify({"erreur": "Accès refusé"}), 403
+    texte = generer_rapport()
+    if request.args.get("format") == "json":
+        return jsonify({"rapport": texte})
+    # Le texte vient du modèle, lui-même nourri par les questions des visiteurs :
+    # on échappe tout HTML avant de convertir le Markdown.
+    contenu = markdown.markdown(html.escape(texte, quote=False), extensions=["tables"])
+    return render_template(
+        "rapport.html",
+        contenu=Markup(contenu),
+        client_name=os.environ.get("REPORTING_CLIENT_NAME", "Démo MP Solutions IA"),
+        date=datetime.now().strftime("%d/%m/%Y"),
+    )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 

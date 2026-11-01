@@ -3,3 +3,4 @@ app_backup.py
 fix_erreurs.py
 *.pyc
 .env
+chat_events.jsonl
