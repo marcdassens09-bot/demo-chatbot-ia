@@ -129,13 +129,15 @@ def chat():
             "role": "assistant",
             "content": texte
         })
-        log_event(
-            log_path=REPORTING_LOG_PATH,
-            question=filtrer_donnees_sensibles(message),
-            profile=client_id,
-            answered=texte != "Je recherche des informations pour vous...",
-            client_name="Démo MP Solutions IA",
-        )
+        # Le test quotidien d'agent-loop (verifier_services.py) n'est pas un visiteur.
+        if request.headers.get("X-MPS-Surveillance") != "1":
+            log_event(
+                log_path=REPORTING_LOG_PATH,
+                question=filtrer_donnees_sensibles(message),
+                profile=client_id,
+                answered=texte != "Je recherche des informations pour vous...",
+                client_name="Démo MP Solutions IA",
+            )
         return jsonify({"reponse": texte, "historique": historique})
     except Exception as e:
         print(f"Erreur API chat : {e}")
