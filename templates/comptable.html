@@ -412,6 +412,7 @@
     texte = (texte || $("saisie").value).trim();
     if (!texte || occupe) return;
     occupe = true;
+    viderMicro();   // le message part : le micro s'arrete et ne reecrit plus la phrase dans la case
     $("saisie").value = ""; ajusterSaisie();
     bulle(texte, "client");
     var attente = bulle("", "ia");
@@ -518,6 +519,19 @@
     afficherDictee(); dicte = ""; enCours = "";
     if (rien) bulle("Le texte n'est pas arrivé à temps : la connexion est sans doute lente. Réessayez en parlant un peu plus longtemps, ou écrivez votre message.", "info");
     $("saisie").focus();
+  }
+  // arret complet et silencieux du micro, avec oubli de ce qui a ete dicte (au moment de l'envoi)
+  function viderMicro() {
+    var r = reco; reco = null;
+    if (r) { r.onresult = null; r.onerror = null; r.onend = null; try { r.abort(); } catch (e) {} }
+    clearTimeout(minuteur); clearTimeout(filet);
+    dicte = ""; enCours = ""; acquis = "";
+    if (ecoute || attente) {
+      ecoute = false; attente = false; parle = false;
+      $("btn-micro").classList.remove("ecoute"); $("btn-micro").textContent = "🎤";
+      $("btn-micro").title = "Parler";
+      $("saisie").placeholder = INVITE;
+    }
   }
   function afficherDictee() {
     $("saisie").value = fusion(dicte, enCours); ajusterSaisie();
