@@ -484,7 +484,7 @@
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reco = null, ecoute = false, attente = false, parle = false;
   var minuteur = null, filet = null, dicte = "", enCours = "", relances = 0;
-  var SILENCE_MS = 2000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, demarrage = 0;
+  var SILENCE_MS = 2000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, ATTENTE_FINALE_MS = 1500, demarrage = 0;
 
   function relancerMinuteur(delai) {
     clearTimeout(minuteur);
@@ -498,7 +498,9 @@
     $("btn-micro").title = "Texte en cours… cliquez pour abandonner";
     $("saisie").placeholder = "J'écris ce que vous avez dit… (cliquez ⏳ pour abandonner)";
     try { reco.stop(); } catch (e) {}
-    filet = setTimeout(abandonnerMicro, ATTENTE_TEXTE_MS);
+    // le texte provisoire est deja dans la case : on n'attend plus 20 s la version definitive de Google,
+    // on la laisse 1,5 s pour arriver puis on garde ce qui est affiche
+    filet = setTimeout(abandonnerMicro, (dicte + enCours).trim() ? ATTENTE_FINALE_MS : ATTENTE_TEXTE_MS);
   }
   // abandon immediat (2e clic, interrupteur coupe, ou trop long)
   function abandonnerMicro() {
