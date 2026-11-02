@@ -416,25 +416,50 @@
     bulle(texte, "client");
     var attente = bulle("", "ia");
     attente.innerHTML = '<span class="points"><i></i><i></i><i></i></span>';
-    appel(BASE + "/chat", { metier: metier.id, fiche_perso: metier.fiche, message: texte, historique: historique })
-      .then(function (d) {
-        attente.remove();
-        if (d.reponse) {
-          historique = d.historique; bruts.push(texte);
-          bulle(d.reponse, "ia");
-          if (PUBLIC && typeof d.restants === "number") {
-            $("restants").textContent = d.restants + " message" + (d.restants > 1 ? "s" : "") + " restant" + (d.restants > 1 ? "s" : "") + " aujourd'hui";
-          }
-        } else if (PUBLIC && d._statut === 429 && d.restants === 0) {
-          bulle(d.erreur, "info");
-          $("restants").textContent = "Démonstration terminée pour aujourd'hui";
-        } else if (d._statut === 403) {
-          bulle("Le code d'accès n'est plus valable. Rechargez la page.", "info");
-        } else if (d._statut === 429) {
-          bulle("Doucement ! Trop de messages en une minute, attendez un peu.", "info");
-        } else {
-          bulle(d.erreur || "Petit souci technique, réessayez.", "info");
+    var corps = { metier: metier.id, fiche_perso: metier.fiche, message: texte, historique: historique, code: code };
+    fetch(BASE + "/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) })
+      .then(function (r) {
+        var type = r.headers.get("Content-Type") || "";
+        // refus (quota, code, erreur) : le serveur repond en JSON, comme avant
+        if (type.indexOf("application/json") !== -1 || !r.ok || !r.body) {
+          return r.json().catch(function () { return {}; }).then(function (d) {
+            attente.remove();
+            if (PUBLIC && r.status === 429 && d.restants === 0) {
+              bulle(d.erreur, "info");
+              $("restants").textContent = "Démonstration terminée pour aujourd'hui";
+            } else if (r.status === 403) {
+              bulle("Le code d'accès n'est plus valable. Rechargez la page.", "info");
+            } else if (r.status === 429) {
+              bulle("Doucement ! Trop de messages en une minute, attendez un peu.", "info");
+            } else {
+              bulle(d.erreur || "Petit souci technique, réessayez.", "info");
+            }
+          });
         }
+        // reponse en direct : le texte s'affiche au fur et a mesure
+        var masque = decodeURIComponent(r.headers.get("X-Message-Masque") || "") || texte;
+        var restants = r.headers.get("X-Restants");
+        var lecteur = r.body.getReader(), decodeur = new TextDecoder("utf-8"), recu = "", cible = null;
+        function lire() {
+          return lecteur.read().then(function (m) {
+            if (m.done) {
+              recu += decodeur.decode();
+              if (!cible) { attente.remove(); cible = bulle(recu, "ia"); } else cible.textContent = recu;
+              historique.push({ role: "user", content: masque }, { role: "assistant", content: recu.trim() });
+              bruts.push(texte);
+              if (PUBLIC && restants !== null && restants !== "None") {
+                var n = parseInt(restants, 10);
+                $("restants").textContent = n + " message" + (n > 1 ? "s" : "") + " restant" + (n > 1 ? "s" : "") + " aujourd'hui";
+              }
+              return;
+            }
+            recu += decodeur.decode(m.value, { stream: true });
+            if (!cible) { attente.remove(); cible = bulle(recu, "ia"); }
+            else { cible.textContent = recu; $("messages").scrollTop = $("messages").scrollHeight; }
+            return lire();
+          });
+        }
+        return lire();
       })
       .catch(function () { attente.remove(); bulle("Connexion perdue, réessayez.", "info"); })
       .then(function () { occupe = false; $("saisie").focus(); });
@@ -453,13 +478,13 @@
   // ---- micro (Chrome / Edge) ----
   // La dictee de Chrome passe par Internet : avec une connexion lente, le texte arrive en retard.
   // 1) On ecoute : le texte s'affiche des qu'il arrive.
-  // 2) Clic sur stop (ou 4 s apres la fin de la voix) : le micro se coupe, mais on ATTEND que le
+  // 2) Clic sur stop (ou 2 s apres la fin de la voix) : le micro se coupe, mais on ATTEND que le
   //    texte arrive (bouton ⏳). Un 2e clic abandonne. Au bout de 20 s, on abandonne tout seul.
   // 3) Le texte reste dans la zone : on relit, puis Entree.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reco = null, ecoute = false, attente = false, parle = false;
-  var minuteur = null, filet = null, dicte = "", enCours = "";
-  var SILENCE_MS = 4000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, demarrage = 0;
+  var minuteur = null, filet = null, dicte = "", enCours = "", relances = 0;
+  var SILENCE_MS = 2000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, ATTENTE_FINALE_MS = 1500, demarrage = 0;
 
   function relancerMinuteur(delai) {
     clearTimeout(minuteur);
@@ -473,7 +498,9 @@
     $("btn-micro").title = "Texte en cours… cliquez pour abandonner";
     $("saisie").placeholder = "J'écris ce que vous avez dit… (cliquez ⏳ pour abandonner)";
     try { reco.stop(); } catch (e) {}
-    filet = setTimeout(abandonnerMicro, ATTENTE_TEXTE_MS);
+    // le texte provisoire est deja dans la case : on n'attend plus 20 s la version definitive de Google,
+    // on la laisse 1,5 s pour arriver puis on garde ce qui est affiche
+    filet = setTimeout(abandonnerMicro, (dicte + enCours).trim() ? ATTENTE_FINALE_MS : ATTENTE_TEXTE_MS);
   }
   // abandon immediat (2e clic, interrupteur coupe, ou trop long)
   function abandonnerMicro() {
@@ -522,12 +549,13 @@
       reco.lang = "fr-FR";
       reco.continuous = true;       // ne coupe pas a la premiere pause (numeros de telephone)
       reco.interimResults = true;   // affiche le texte des qu'il arrive
-      dicte = ""; enCours = ""; parle = false; attente = false;
+      dicte = ""; enCours = ""; parle = false; attente = false; relances = 0;
       reco.onstart = function () {
-        ecoute = true; demarrage = Date.now();
+        var relance = ecoute; ecoute = true; if (!relance) demarrage = Date.now();
         $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹";
         $("btn-micro").title = "Finir";
-        $("saisie").value = ""; $("saisie").placeholder = "Je vous écoute… (cliquez ⏹ pour finir)";
+        if (!relance) $("saisie").value = "";
+        $("saisie").placeholder = "Je vous écoute… (cliquez ⏹ pour finir)";
         relancerMinuteur(ATTENTE_DEBUT_MS);
       };
       // la voix est detectee sur l'ordinateur : tant qu'on parle, on ne coupe pas
@@ -549,6 +577,14 @@
         else if (e.error === "network") bulle("La dictée a besoin d'Internet et la connexion est trop lente : écrivez votre message.", "info");
       };
       reco.onend = function () {
+        // Chrome coupe parfois la dictee tout seul (connexion lente, pause, ~1 min) alors que
+        // le client parle encore : on garde ce qui est dicte et on relance l'ecoute aussitot,
+        // sans rien perdre. On ne s'arrete que si on l'a demande (stop, silence, 90 s).
+        if (enCours.trim()) { dicte = (dicte + " " + enCours).trim(); enCours = ""; }
+        if (!attente && ecoute && reco && Date.now() - demarrage < MAX_MS && relances < 5) {
+          relances++;
+          try { reco.start(); return; } catch (err) {}
+        }
         reco = null;
         // on n'envoie pas tout seul : le client relit, corrige si besoin, puis Entree
         finMicro();
