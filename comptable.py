@@ -9,7 +9,9 @@ import threading
 from datetime import date
 
 from anthropic import Anthropic
-from flask import Blueprint, jsonify, render_template, request, send_from_directory
+from urllib.parse import quote
+
+from flask import Blueprint, Response, jsonify, render_template, request, send_from_directory, stream_with_context
 
 from lecteur_site import SiteIllisible, lire_site
 from metiers import METIERS, date_en_clair, maintenant_france, menu_du_jour
@@ -403,26 +405,43 @@ def repondre(public):
         if not autorise:
             return refus_quota()
 
-    historique.append({"role": "user", "content": masquer(message.strip())})
-    try:
-        rep = client.messages.create(
-            model=MODELE,
-            max_tokens=600,
-            thinking={"type": "disabled"},
-            system=prompt_systeme(fiche),
-            messages=historique,
-        )
-        texte = "".join(b.text for b in rep.content if b.type == "text").strip()
-    except Exception as e:
-        print(f"Erreur API comptable/chat : {e}")
-        return jsonify({"erreur": "Petit souci technique, réessaie dans quelques secondes."}), 500
-    if not texte:
-        texte = f"Je transmets votre question à {fiche['artisan']}, qui vous répondra directement."
-    historique.append({"role": "assistant", "content": texte})
-    reponse = {"reponse": texte, "historique": historique}
+    message_masque = masquer(message.strip())
+    historique.append({"role": "user", "content": message_masque})
+    systeme = prompt_systeme(fiche)
+    repli = f"Je transmets votre question à {fiche['artisan']}, qui vous répondra directement."
+
+    # La reponse part mot par mot, des que l'IA l'ecrit (comme dans Claude) :
+    # le client voit le texte arriver tout de suite au lieu d'attendre la fin.
+    def flux():
+        ecrit = False
+        try:
+            with client.messages.stream(
+                model=MODELE,
+                max_tokens=600,
+                thinking={"type": "disabled"},
+                system=systeme,
+                messages=historique,
+            ) as stream:
+                for morceau in stream.text_stream:
+                    if morceau:
+                        ecrit = True
+                        yield morceau
+        except Exception as e:
+            print(f"Erreur API comptable/chat : {e}")
+            if not ecrit:
+                yield "Petit souci technique, réessayez dans quelques secondes."
+            return
+        if not ecrit:
+            yield repli
+
+    entetes = {
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+        "X-Message-Masque": quote(message_masque),
+    }
     if public:
-        reponse["restants"] = restants
-    return jsonify(reponse)
+        entetes["X-Restants"] = str(restants)
+    return Response(stream_with_context(flux()), mimetype="text/plain", headers=entetes)
 
 
 @comptable_bp.route("/comptable/fiche", methods=["POST"])
