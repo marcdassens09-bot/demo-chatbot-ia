@@ -483,7 +483,7 @@
   // 3) Le texte reste dans la zone : on relit, puis Entree.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reco = null, ecoute = false, attente = false, parle = false;
-  var minuteur = null, filet = null, dicte = "", enCours = "", relances = 0;
+  var minuteur = null, filet = null, dicte = "", enCours = "", acquis = "", relances = 0;
   var SILENCE_MS = 2000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, ATTENTE_FINALE_MS = 1500, demarrage = 0;
 
   function relancerMinuteur(delai) {
@@ -520,7 +520,18 @@
     $("saisie").focus();
   }
   function afficherDictee() {
-    $("saisie").value = (dicte + " " + enCours).trim(); ajusterSaisie();
+    $("saisie").value = fusion(dicte, enCours); ajusterSaisie();
+  }
+  // fusionne deux bouts de dictee sans repeter ce qui est deja ecrit
+  function brut(t) { return t.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, ""); }
+  function fusion(a, b) {
+    a = (a || "").trim(); b = (b || "").trim();
+    if (!b) return a;
+    if (!a) return b;
+    var na = brut(a), nb = brut(b);
+    if (!nb || na.indexOf(nb) === 0 || na.slice(-nb.length) === nb) return a;   // deja dit
+    if (nb.indexOf(na) === 0) return b;           // b reprend a et le complete
+    return a + " " + b;
   }
 
   var microActif = true;
@@ -549,7 +560,7 @@
       reco.lang = "fr-FR";
       reco.continuous = true;       // ne coupe pas a la premiere pause (numeros de telephone)
       reco.interimResults = true;   // affiche le texte des qu'il arrive
-      dicte = ""; enCours = ""; parle = false; attente = false; relances = 0;
+      dicte = ""; enCours = ""; acquis = ""; parle = false; attente = false; relances = 0;
       reco.onstart = function () {
         var relance = ecoute; ecoute = true; if (!relance) demarrage = Date.now();
         $("btn-micro").classList.add("ecoute"); $("btn-micro").textContent = "⏹";
@@ -562,11 +573,15 @@
       reco.onspeechstart = function () { parle = true; clearTimeout(minuteur); };
       reco.onspeechend = function () { parle = false; if (!attente) relancerMinuteur(); };
       reco.onresult = function (e) {
-        enCours = "";
-        for (var i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) dicte = (dicte + " " + e.results[i][0].transcript).trim();
-          else enCours += e.results[i][0].transcript;
+        // Sur telephone (Chrome Android), chaque morceau renvoye repete le debut de la phrase
+        // ("bonjour", "bonjour j'aimerais", ...) : on relit toute la liste et on fusionne au lieu
+        // de mettre les morceaux bout a bout.
+        var finals = "", provisoire = "";
+        for (var i = 0; i < e.results.length; i++) {
+          var t = e.results[i][0].transcript.trim();
+          if (e.results[i].isFinal) finals = fusion(finals, t); else provisoire = fusion(provisoire, t);
         }
+        dicte = fusion(acquis, finals); enCours = provisoire;
         afficherDictee();
         if (attente) return;
         if (Date.now() - demarrage > MAX_MS) terminerMicro(); else if (!parle) relancerMinuteur();
@@ -580,9 +595,9 @@
         // Chrome coupe parfois la dictee tout seul (connexion lente, pause, ~1 min) alors que
         // le client parle encore : on garde ce qui est dicte et on relance l'ecoute aussitot,
         // sans rien perdre. On ne s'arrete que si on l'a demande (stop, silence, 90 s).
-        if (enCours.trim()) { dicte = (dicte + " " + enCours).trim(); enCours = ""; }
+        dicte = fusion(dicte, enCours); enCours = "";
         if (!attente && ecoute && reco && Date.now() - demarrage < MAX_MS && relances < 5) {
-          relances++;
+          relances++; acquis = dicte;
           try { reco.start(); return; } catch (err) {}
         }
         reco = null;
