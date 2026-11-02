@@ -478,13 +478,13 @@
   // ---- micro (Chrome / Edge) ----
   // La dictee de Chrome passe par Internet : avec une connexion lente, le texte arrive en retard.
   // 1) On ecoute : le texte s'affiche des qu'il arrive.
-  // 2) Clic sur stop (ou 4 s apres la fin de la voix) : le micro se coupe, mais on ATTEND que le
+  // 2) Clic sur stop (ou 2 s apres la fin de la voix) : le micro se coupe, mais on ATTEND que le
   //    texte arrive (bouton ⏳). Un 2e clic abandonne. Au bout de 20 s, on abandonne tout seul.
   // 3) Le texte reste dans la zone : on relit, puis Entree.
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   var reco = null, ecoute = false, attente = false, parle = false;
   var minuteur = null, filet = null, dicte = "", enCours = "", relances = 0;
-  var SILENCE_MS = 4000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, demarrage = 0;
+  var SILENCE_MS = 2000, ATTENTE_DEBUT_MS = 10000, MAX_MS = 90000, ATTENTE_TEXTE_MS = 20000, demarrage = 0;
 
   function relancerMinuteur(delai) {
     clearTimeout(minuteur);
