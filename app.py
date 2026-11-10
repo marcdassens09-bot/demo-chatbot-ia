@@ -143,6 +143,10 @@ def chat():
         print(f"Erreur API chat : {e}")
         return jsonify({"reponse": "Désolé, je rencontre un problème technique. Merci de réessayer dans quelques instants."}), 500
 
+# En dessous de ce nombre de questions, /rapport les liste sans les analyser.
+RAPPORT_SEUIL_ANALYSE = 10
+
+
 def generer_rapport():
     """Analyse par Claude des 50 dernières questions posées à la démo.
     Même source que /reporting : Google Sheet si REPORTING_SHEET_URL, sinon fichier."""
@@ -158,6 +162,17 @@ def generer_rapport():
                  if len(str(ev.get("question", "")).split()) > 4][-50:]
     if not questions:
         return "Aucune question enregistrée pour le moment."
+    if len(questions) < RAPPORT_SEUIL_ANALYSE:
+        # Trop peu de questions pour des pourcentages ou des conclusions :
+        # on les liste telles quelles, sans appeler le modèle.
+        lignes = "\n".join("- " + " ".join(q.split()) for q in questions)
+        pluriel = "s" if len(questions) > 1 else ""
+        return (
+            f"**{len(questions)} question{pluriel} enregistrée{pluriel} sur les 30 derniers jours.**\n\n"
+            f"C'est trop peu pour en tirer des tendances : l'analyse (métiers, sujets, signaux "
+            f"commerciaux, conseil) démarre à partir de {RAPPORT_SEUIL_ANALYSE} questions.\n\n"
+            f"## Questions posées\n\n{lignes}"
+        )
     try:
         resultat = client.messages.create(
             model="claude-sonnet-5",
@@ -167,7 +182,9 @@ def generer_rapport():
                 "Analyse ces questions posées par des prospects qui testent la démonstration de "
                 "chatbot de MP Solutions IA (entre crochets : l'entreprise fictive choisie). Les "
                 "réponses courtes (oui, ok, une ville seule) ont été retirées : le chatbot, lui, voit "
-                "toute la conversation, ne conclus donc pas à une perte de contexte. Génère un "
+                "toute la conversation, ne conclus donc pas à une perte de contexte. Tu ne "
+                "vois pas non plus les réponses de la démo : ne suppose pas ce qu'elle a répondu, et "
+                "présente ce qui te semble mal couvert comme une piste à vérifier, pas comme un constat. Génère un "
                 "rapport en Markdown, concis : métiers les plus testés, Top 3 sujets (%), signaux "
                 "d'intérêt commercial, points où la démo répond mal, 1 conseil concret pour améliorer la démo."
             ),
